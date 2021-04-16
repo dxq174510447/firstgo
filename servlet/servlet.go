@@ -31,13 +31,19 @@ type RequestMethod struct {
 	MethodName string
 
 	//方法对应的request参数名
-	Paramter string
+	MethodParamter string
+
+	//默认的渲染类型 json html 默认是json
+	MethodRender string
 }
 
 type dispatchServlet struct {
 	contextPath string
 }
 
+func (d *dispatchServlet) renderJson(response http.ResponseWriter, request *http.Request, result interface{}) {
+
+}
 func (d *dispatchServlet) AddRequestMapping(mapping *RequestController) {
 	var sp string = d.contextPath
 	if sp == "/" {
@@ -80,12 +86,14 @@ func (d *dispatchServlet) AddRequestMapping(mapping *RequestController) {
 			}
 			methodType := reflect.ValueOf(target).MethodByName(requestMethod.MethodName)
 			paramlen := methodType.Type().NumIn()
+
+			var result interface{}
 			if paramlen == 0 {
-				reflect.ValueOf(target).MethodByName(requestMethod.MethodName).Call([]reflect.Value{})
+				result = reflect.ValueOf(target).MethodByName(requestMethod.MethodName).Call([]reflect.Value{})
 			} else {
 				var paramter []string
-				if requestMethod.Paramter != "" {
-					paramter = strings.Split(requestMethod.Paramter, ",")
+				if requestMethod.MethodParamter != "" {
+					paramter = strings.Split(requestMethod.MethodParamter, ",")
 				}
 				param := make([]reflect.Value, paramlen)
 				for i := 0; i < paramlen; i++ {
@@ -137,9 +145,11 @@ func (d *dispatchServlet) AddRequestMapping(mapping *RequestController) {
 						panic(fmt.Errorf("struct only ptr"))
 					}
 				}
-				reflect.ValueOf(target).MethodByName(requestMethod.MethodName).Call(param)
+				result = reflect.ValueOf(target).MethodByName(requestMethod.MethodName).Call(param)
 			}
-			response.Write([]byte("hello world"))
+			if requestMethod.MethodRender == "" || requestMethod.MethodRender == "json" {
+				d.renderJson(response, request, result)
+			}
 		}
 	}()
 	http.HandleFunc(prefix, f)
