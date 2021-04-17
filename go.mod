@@ -1,1 +1,3 @@
-module "firstgo"
+module firstgo
+
+go 1.16
