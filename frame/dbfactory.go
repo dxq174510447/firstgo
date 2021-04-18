@@ -102,10 +102,10 @@ func init() {
 
 	var defaultFactory DbFactory = DbFactory{
 		dbuser: util.ConfigUtil.Get("DB_USER", "platform"),
-		dbpwd:  util.ConfigUtil.Get("DB_PASSWORD", "Qian1987777"),
+		dbpwd:  util.ConfigUtil.Get("DB_PASSWORD", "xxxxxxxx"),
 		dbname: util.ConfigUtil.Get("DB_NAME", "plat_base1"),
 		dbport: util.ConfigUtil.Get("DB_PORT", "3306"),
-		dbhost: util.ConfigUtil.Get("DB_HOST", "rm-bp1thh63s5tx33q0kio.mysql.rds.aliyuncs.com"),
+		dbhost: util.ConfigUtil.Get("DB_HOST", "xxxxxxx"),
 	}
 	db := defaultFactory.NewDatabase()
 	AddDbRouter(DbDefaultKey, db)
