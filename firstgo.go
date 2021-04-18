@@ -2,7 +2,7 @@ package main
 
 import "net/http"
 import _ "firstgo/controller"
-import _ "firstgo/servlet"
+import _ "firstgo/frame"
 
 func main() {
 

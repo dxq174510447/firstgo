@@ -1,4 +1,4 @@
-package servlet
+package frame
 
 import (
 	"encoding/json"
@@ -42,7 +42,9 @@ type dispatchServlet struct {
 }
 
 func (d *dispatchServlet) renderJson(response http.ResponseWriter, request *http.Request, result interface{}) {
-
+	response.Header().Add("Content-Type", "application/json;charset=UTF-8")
+	a, _ := json.Marshal(result)
+	response.Write(a)
 }
 func (d *dispatchServlet) AddRequestMapping(mapping *RequestController) {
 	var sp string = d.contextPath
@@ -72,12 +74,30 @@ func (d *dispatchServlet) AddRequestMapping(mapping *RequestController) {
 		}
 
 		return func(response http.ResponseWriter, request *http.Request) {
+			//fmt.Println(request.URL.Path)
+			var requestMethod RequestMethod
+			local := NewFrameStack()
+			defer func() {
+				local.Pop()
+				local = nil
+
+				if err := recover(); err != nil {
+
+					if requestMethod.MethodRender == "" || requestMethod.MethodRender == "json" {
+						tip := fmt.Sprintln(err)
+						errJson := util.JsonUtil.BuildJsonFailure1(tip, nil)
+						d.renderJson(response, request, errJson)
+					}
+
+				}
+			}()
+
 			url := util.ConfigUtil.ClearHttpPath(request.URL.Path)
 			url = util.ConfigUtil.RemovePrefix(url, pf)
 			httpMethod := strings.ToLower(request.Method)
 			mk := fmt.Sprintf("%s-%s", httpMethod, url)
+			fmt.Println(mk)
 
-			var requestMethod RequestMethod
 			if _, ok := methodRef[mk]; ok {
 				requestMethod = methodRef[mk]
 			} else {
@@ -87,7 +107,7 @@ func (d *dispatchServlet) AddRequestMapping(mapping *RequestController) {
 			methodType := reflect.ValueOf(target).MethodByName(requestMethod.MethodName)
 			paramlen := methodType.Type().NumIn()
 
-			var result interface{}
+			var result []reflect.Value
 			if paramlen == 0 {
 				result = reflect.ValueOf(target).MethodByName(requestMethod.MethodName).Call([]reflect.Value{})
 			} else {
@@ -102,6 +122,8 @@ func (d *dispatchServlet) AddRequestMapping(mapping *RequestController) {
 					case reflect.Ptr:
 						if pt.Elem() == reflect.TypeOf(*request) {
 							param[i] = reflect.ValueOf(request)
+						} else if pt.Elem() == reflect.TypeOf(*local) {
+							param[i] = reflect.ValueOf(local)
 						} else {
 							nt := reflect.New(pt.Elem())
 							ntpr := nt.Interface()
@@ -121,14 +143,14 @@ func (d *dispatchServlet) AddRequestMapping(mapping *RequestController) {
 						}
 					case reflect.String:
 						var pk string = paramter[i]
-						var pv string = request.Form.Get(pk)
+						var pv string = request.FormValue(pk)
 						if pv == "" {
 							pv = request.URL.Query().Get(pk)
 						}
 						param[i] = reflect.ValueOf(pv)
 					case reflect.Int:
 						var pk string = paramter[i]
-						var pv string = request.Form.Get(pk)
+						var pv string = request.FormValue(pk)
 						if pv == "" {
 							pv = request.URL.Query().Get(pk)
 						}
@@ -139,6 +161,8 @@ func (d *dispatchServlet) AddRequestMapping(mapping *RequestController) {
 							if err != nil {
 								panic(fmt.Errorf("string2int error"))
 							}
+						} else {
+							panic(fmt.Errorf("paramter %s get error", pk))
 						}
 						param[i] = reflect.ValueOf(pvi)
 					case reflect.Struct:
@@ -147,11 +171,12 @@ func (d *dispatchServlet) AddRequestMapping(mapping *RequestController) {
 				}
 				result = reflect.ValueOf(target).MethodByName(requestMethod.MethodName).Call(param)
 			}
-			if requestMethod.MethodRender == "" || requestMethod.MethodRender == "json" {
-				d.renderJson(response, request, result)
+			if len(result) == 1 && requestMethod.MethodRender == "" || requestMethod.MethodRender == "json" {
+				d.renderJson(response, request, result[0].Interface())
 			}
 		}
 	}()
+	http.HandleFunc(prefix+"/", f)
 	http.HandleFunc(prefix, f)
 }
 
