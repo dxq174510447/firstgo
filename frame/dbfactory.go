@@ -9,16 +9,17 @@ import (
 	"time"
 )
 
-//db路由选择
+// DbDefaultKey db路由选择 默认default 兼容后面路由选择
 const DbDefaultKey = "default"
 
-//全局数据库连接
+// DbConnectKey 当前goroute的包含的数据库连接key，在变量栈中的key
 const DbConnectKey = "_db_connect"
 
 //key --> dbname-tablename-method
-//简单都orm TODO
-var entityTpl = make(map[string]string)
+//简单都orm
+//var entityTpl = make(map[string]string)
 
+// dbRouter 关键字 对应的db源
 var dbRouter = make(map[string]*sql.DB)
 
 func AddDbRouter(key string, db *sql.DB) {
@@ -87,6 +88,8 @@ func OpenSqlConnection(readOnly int) *DbConnection {
 		Isolation: sql.LevelRepeatableRead,
 		ReadOnly:  readOnly == 1,
 	}
+
+	// 取默认的key
 	var key string = DbDefaultKey
 	var db *sql.DB = dbRouter[key]
 	conn, _ := db.Conn(ctx)
@@ -100,12 +103,13 @@ func OpenSqlConnection(readOnly int) *DbConnection {
 
 func init() {
 
+	// 初始化默认数据源
 	var defaultFactory DbFactory = DbFactory{
 		dbuser: util.ConfigUtil.Get("DB_USER", "platform"),
-		dbpwd:  util.ConfigUtil.Get("DB_PASSWORD", "xxxxxxxx"),
+		dbpwd:  util.ConfigUtil.Get("DB_PASSWORD", "Xxxabc1237834"),
 		dbname: util.ConfigUtil.Get("DB_NAME", "plat_base1"),
 		dbport: util.ConfigUtil.Get("DB_PORT", "3306"),
-		dbhost: util.ConfigUtil.Get("DB_HOST", "xxxxxxx"),
+		dbhost: util.ConfigUtil.Get("DB_HOST", "rm-bp1thh63s5tx33q0kio.mysql.rds.aliyuncs.com"),
 	}
 	db := defaultFactory.NewDatabase()
 	AddDbRouter(DbDefaultKey, db)

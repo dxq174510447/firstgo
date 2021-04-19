@@ -9,6 +9,7 @@ type jsonUtil struct {
 const WebSuccess int = 0
 const WebFailure int = 500
 
+// BuildJsonSuccess 构建成功返回
 func (c *jsonUtil) BuildJsonSuccess(r interface{}) *vo.JsonResult {
 	var result vo.JsonResult = vo.JsonResult{}
 
@@ -18,6 +19,7 @@ func (c *jsonUtil) BuildJsonSuccess(r interface{}) *vo.JsonResult {
 	return &result
 }
 
+// BuildJsonFailure 构建失败返回
 func (c *jsonUtil) BuildJsonFailure(code int, message string, r interface{}) *vo.JsonResult {
 	var result vo.JsonResult = vo.JsonResult{}
 
@@ -28,6 +30,7 @@ func (c *jsonUtil) BuildJsonFailure(code int, message string, r interface{}) *vo
 	return &result
 }
 
+// BuildJsonFailure1 构建失败返回
 func (c *jsonUtil) BuildJsonFailure1(message string, r interface{}) *vo.JsonResult {
 	var result vo.JsonResult = vo.JsonResult{}
 
@@ -38,6 +41,7 @@ func (c *jsonUtil) BuildJsonFailure1(message string, r interface{}) *vo.JsonResu
 	return &result
 }
 
+// BuildJsonArraySuccess 构建返回数组 例如分页查询
 func (c *jsonUtil) BuildJsonArraySuccess(r interface{}, total int) *vo.JsonResult {
 	var result vo.JsonResult = vo.JsonResult{}
 
@@ -50,7 +54,7 @@ func (c *jsonUtil) BuildJsonArraySuccess(r interface{}, total int) *vo.JsonResul
 	return &result
 }
 
-// ptr
+// Copy 结构体拷贝
 func (c *jsonUtil) Copy(source interface{}, target interface{}) {
 	copier.CopyWithOption(target, source, copier.Option{IgnoreEmpty: true, DeepCopy: true})
 }

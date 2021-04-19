@@ -122,11 +122,17 @@ func (c *UsersDao) List(local *frame.FrameStack, param *vo.UsersParam) ([]*vo.Us
 	if err1 != nil {
 		panic(err1)
 	}
-	dd := []*vo.UsersVo{}
+	dd := make([]*vo.UsersVo, pageSize)
+	queryCount := 0
 	for result.Next() {
 		data := vo.UsersVo{}
 		result.Scan(&data.Id, &data.Name, &data.Status) //不scan会导致连接不释放
-		dd = append(dd, &data)
+		dd[queryCount] = &data
+		queryCount++
+	}
+
+	if queryCount > 0 {
+		dd = dd[0:queryCount]
 	}
 
 	stmt2, err2 := con.Con.PrepareContext(con.Ctx, "select count(id) from  users ")
@@ -141,6 +147,40 @@ func (c *UsersDao) List(local *frame.FrameStack, param *vo.UsersParam) ([]*vo.Us
 	var totalRow int = 0
 	result2.Scan(&totalRow)
 	return dd, totalRow
+}
+
+func (c *UsersDao) FindByNameExcludeId(local *frame.FrameStack, name string, id int) int {
+	con := local.Get(frame.DbConnectKey).(*frame.DbConnection)
+
+	stmt2, err2 := con.Con.PrepareContext(con.Ctx, "select count(id) from  users where name = ? and id != ? ")
+	if err2 != nil {
+		panic(err2)
+	}
+	defer func() {
+		stmt2.Close()
+	}()
+	result2 := stmt2.QueryRow(name, id)
+
+	var totalRow int = 0
+	result2.Scan(&totalRow)
+	return totalRow
+}
+
+func (c *UsersDao) FindByName(local *frame.FrameStack, name string) int {
+	con := local.Get(frame.DbConnectKey).(*frame.DbConnection)
+
+	stmt2, err2 := con.Con.PrepareContext(con.Ctx, "select count(id) from  users where name = ? ")
+	if err2 != nil {
+		panic(err2)
+	}
+	defer func() {
+		stmt2.Close()
+	}()
+	result2 := stmt2.QueryRow(name)
+
+	var totalRow int = 0
+	result2.Scan(&totalRow)
+	return totalRow
 }
 
 var UsersDaoImpl UsersDao = UsersDao{}

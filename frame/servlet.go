@@ -2,6 +2,7 @@ package frame
 
 import (
 	"encoding/json"
+	"firstgo/frame/vo"
 	"firstgo/util"
 	"fmt"
 	"io/ioutil"
@@ -46,6 +47,24 @@ func (d *dispatchServlet) renderJson(response http.ResponseWriter, request *http
 	a, _ := json.Marshal(result)
 	response.Write(a)
 }
+func (d *dispatchServlet) renderExceptionJson(response http.ResponseWriter, request *http.Request, exception interface{}) {
+
+	var errJson *vo.JsonResult
+	switch exception.(type) {
+	case *FrameException:
+		value, _ := exception.(*FrameException)
+		errJson = util.JsonUtil.BuildJsonFailure(value.Code, value.Message, nil)
+	default:
+		tip := fmt.Sprintln(exception)
+		errJson = util.JsonUtil.BuildJsonFailure1(tip, nil)
+	}
+
+	response.Header().Add("Content-Type", "application/json;charset=UTF-8")
+	a, _ := json.Marshal(errJson)
+	response.Write(a)
+}
+
+// AddRequestMapping 思路是根据path前缀匹配到controller，在根据path和method去匹配controller具体的method
 func (d *dispatchServlet) AddRequestMapping(mapping *RequestController) {
 	var sp string = d.contextPath
 	if sp == "/" {
@@ -84,9 +103,7 @@ func (d *dispatchServlet) AddRequestMapping(mapping *RequestController) {
 				if err := recover(); err != nil {
 
 					if requestMethod.MethodRender == "" || requestMethod.MethodRender == "json" {
-						tip := fmt.Sprintln(err)
-						errJson := util.JsonUtil.BuildJsonFailure1(tip, nil)
-						d.renderJson(response, request, errJson)
+						d.renderExceptionJson(response, request, err)
 					}
 
 				}
@@ -96,7 +113,7 @@ func (d *dispatchServlet) AddRequestMapping(mapping *RequestController) {
 			url = util.ConfigUtil.RemovePrefix(url, pf)
 			httpMethod := strings.ToLower(request.Method)
 			mk := fmt.Sprintf("%s-%s", httpMethod, url)
-			fmt.Println(mk)
+			//		fmt.Println(mk)
 
 			if _, ok := methodRef[mk]; ok {
 				requestMethod = methodRef[mk]

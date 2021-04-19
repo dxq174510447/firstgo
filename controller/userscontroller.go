@@ -13,6 +13,7 @@ type UsersController struct {
 	usersService *service.UsersService
 }
 
+// Save 新增
 func (c *UsersController) Save(local *frame.FrameStack, param *vo.UsersAdd) *vo2.JsonResult {
 	var data *po.Users = &po.Users{}
 	util.JsonUtil.Copy(param, data)
@@ -38,6 +39,7 @@ func (c *UsersController) Save(local *frame.FrameStack, param *vo.UsersAdd) *vo2
 	return util.JsonUtil.BuildJsonSuccess(result)
 }
 
+// Update 修改
 func (c *UsersController) Update(local *frame.FrameStack, param *vo.UsersEdit) *vo2.JsonResult {
 	var data *po.Users = &po.Users{}
 	util.JsonUtil.Copy(param, data)
@@ -63,6 +65,7 @@ func (c *UsersController) Update(local *frame.FrameStack, param *vo.UsersEdit) *
 	return util.JsonUtil.BuildJsonSuccess(result)
 }
 
+// Delete 删除
 func (c *UsersController) Delete(local *frame.FrameStack, id int) *vo2.JsonResult {
 	var f func() = func() {
 		conn := frame.OpenSqlConnection(0)
@@ -86,6 +89,7 @@ func (c *UsersController) Delete(local *frame.FrameStack, id int) *vo2.JsonResul
 	return util.JsonUtil.BuildJsonSuccess(nil)
 }
 
+// Get 查看
 func (c *UsersController) Get(local *frame.FrameStack, id int) *vo2.JsonResult {
 	var f func() *vo.UsersVo = func() *vo.UsersVo {
 		conn := frame.OpenSqlConnection(1)
@@ -102,6 +106,7 @@ func (c *UsersController) Get(local *frame.FrameStack, id int) *vo2.JsonResult {
 	return util.JsonUtil.BuildJsonSuccess(result)
 }
 
+// List 列表
 func (c *UsersController) List(local *frame.FrameStack, param *vo.UsersParam) *vo2.JsonResult {
 	var f func() ([]*vo.UsersVo, int) = func() ([]*vo.UsersVo, int) {
 		conn := frame.OpenSqlConnection(1)
@@ -118,6 +123,7 @@ func (c *UsersController) List(local *frame.FrameStack, param *vo.UsersParam) *v
 	return util.JsonUtil.BuildJsonArraySuccess(result, total)
 }
 
+// ChangeStatus 变更状态
 func (c *UsersController) ChangeStatus(local *frame.FrameStack, id int, status int) *vo2.JsonResult {
 	var f func() = func() {
 		conn := frame.OpenSqlConnection(0)
@@ -141,8 +147,10 @@ func (c *UsersController) ChangeStatus(local *frame.FrameStack, id int, status i
 	return util.JsonUtil.BuildJsonSuccess(nil)
 }
 
+// UsersControllerImpl 控制器单例
 var UsersControllerImpl UsersController = UsersController{}
 
+// UsersRequestController 控制器请求配置
 var UsersRequestController frame.RequestController = frame.RequestController{
 	HttpPath: "/users",
 	Target:   &UsersControllerImpl,
@@ -184,6 +192,10 @@ var UsersRequestController frame.RequestController = frame.RequestController{
 }
 
 func init() {
+
+	// 初始化service
 	UsersControllerImpl.usersService = &service.UsersServiceImpl
+
+	// 初始化请求路由
 	frame.DispatchServlet.AddRequestMapping(&UsersRequestController)
 }
