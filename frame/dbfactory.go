@@ -106,7 +106,7 @@ func init() {
 	// 初始化默认数据源
 	var defaultFactory DbFactory = DbFactory{
 		dbuser: util.ConfigUtil.Get("DB_USER", "platform"),
-		dbpwd:  util.ConfigUtil.Get("DB_PASSWORD", "Xxxabc1237834"),
+		dbpwd:  util.ConfigUtil.Get("DB_PASSWORD", "xxx"),
 		dbname: util.ConfigUtil.Get("DB_NAME", "plat_base1"),
 		dbport: util.ConfigUtil.Get("DB_PORT", "3306"),
 		dbhost: util.ConfigUtil.Get("DB_HOST", "rm-bp1thh63s5tx33q0kio.mysql.rds.aliyuncs.com"),
