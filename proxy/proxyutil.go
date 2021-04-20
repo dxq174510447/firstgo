@@ -11,6 +11,18 @@ import (
 type ProxyIntercepter interface {
 	Execute(target ProxyTarget, method ProxyTargetMethod,
 		invoker reflect.Value, arg []reflect.Value) []reflect.Value
+	Order() int
+}
+
+type DefaultProxyIntercept struct {
+}
+
+func (d *DefaultProxyIntercept) Execute(target ProxyTarget, method ProxyTargetMethod,
+	invoker reflect.Value, arg []reflect.Value) []reflect.Value {
+	return nil
+}
+func (d *DefaultProxyIntercept) Order() int {
+	return 99999
 }
 
 type ProxyTarget struct {
