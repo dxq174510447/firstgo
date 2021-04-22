@@ -1,7 +1,7 @@
 package controller
 
 import (
-	"firstgo/frame"
+	"firstgo/frame/context"
 	vo2 "firstgo/frame/vo"
 	"firstgo/povo/po"
 	"firstgo/povo/vo"
@@ -9,193 +9,64 @@ import (
 	"firstgo/util"
 )
 
+// UsersController 不要直接初始化 首字母大写代表类
 type UsersController struct {
 	usersService *service.UsersService
 }
 
 // Save 新增
-func (c *UsersController) Save(local *frame.FrameStack, param *vo.UsersAdd) *vo2.JsonResult {
+func (c *UsersController) Save(local *context.LocalStack, param *vo.UsersAdd) *vo2.JsonResult {
 	var data *po.Users = &po.Users{}
 	util.JsonUtil.Copy(param, data)
-	var f func() *vo.UsersVo = func() *vo.UsersVo {
-		conn := frame.OpenSqlConnection(0)
-		conn.BeginTransaction()
 
-		local.Push()
-		local.Set(frame.DbConnectKey, conn)
-
-		defer func() {
-			local.Pop()
-			if err := recover(); err != nil {
-				conn.Rollback()
-				panic(err)
-			} else {
-				conn.Commit()
-			}
-		}()
-		return c.usersService.Save(local, data)
-	}
-	result := f()
+	result := c.usersService.Save(local, data)
 	return util.JsonUtil.BuildJsonSuccess(result)
 }
 
 // Update 修改
-func (c *UsersController) Update(local *frame.FrameStack, param *vo.UsersEdit) *vo2.JsonResult {
+func (c *UsersController) Update(local *context.LocalStack, param *vo.UsersEdit) *vo2.JsonResult {
 	var data *po.Users = &po.Users{}
 	util.JsonUtil.Copy(param, data)
-	var f func() *vo.UsersVo = func() *vo.UsersVo {
-		conn := frame.OpenSqlConnection(0)
-		conn.BeginTransaction()
 
-		local.Push()
-		local.Set(frame.DbConnectKey, conn)
-
-		defer func() {
-			local.Pop()
-			if err := recover(); err != nil {
-				conn.Rollback()
-				panic(err)
-			} else {
-				conn.Commit()
-			}
-		}()
-		return c.usersService.Update(local, data)
-	}
-	result := f()
+	result := c.usersService.Update(local, data)
 	return util.JsonUtil.BuildJsonSuccess(result)
 }
 
 // Delete 删除
-func (c *UsersController) Delete(local *frame.FrameStack, id int) *vo2.JsonResult {
-	var f func() = func() {
-		conn := frame.OpenSqlConnection(0)
-		conn.BeginTransaction()
-
-		local.Push()
-		local.Set(frame.DbConnectKey, conn)
-
-		defer func() {
-			local.Pop()
-			if err := recover(); err != nil {
-				conn.Rollback()
-				panic(err)
-			} else {
-				conn.Commit()
-			}
-		}()
-		c.usersService.Delete(local, id)
-	}
-	f()
+func (c *UsersController) Delete(local *context.LocalStack, id int) *vo2.JsonResult {
+	c.usersService.Delete(local, id)
 	return util.JsonUtil.BuildJsonSuccess(nil)
 }
 
 // Get 查看
-func (c *UsersController) Get(local *frame.FrameStack, id int) *vo2.JsonResult {
-	var f func() *vo.UsersVo = func() *vo.UsersVo {
-		conn := frame.OpenSqlConnection(1)
-
-		local.Push()
-		local.Set(frame.DbConnectKey, conn)
-
-		defer func() {
-			local.Pop()
-		}()
-		return c.usersService.Get(local, id)
-	}
-	result := f()
+func (c *UsersController) Get(local *context.LocalStack, id int) *vo2.JsonResult {
+	result := c.usersService.Get(local, id)
 	return util.JsonUtil.BuildJsonSuccess(result)
 }
 
 // List 列表
-func (c *UsersController) List(local *frame.FrameStack, param *vo.UsersParam) *vo2.JsonResult {
-	var f func() ([]*vo.UsersVo, int) = func() ([]*vo.UsersVo, int) {
-		conn := frame.OpenSqlConnection(1)
-
-		local.Push()
-		local.Set(frame.DbConnectKey, conn)
-
-		defer func() {
-			local.Pop()
-		}()
-		return c.usersService.List(local, param)
-	}
-	result, total := f()
+func (c *UsersController) List(local *context.LocalStack, param *vo.UsersParam) *vo2.JsonResult {
+	result, total := c.usersService.List(local, param)
 	return util.JsonUtil.BuildJsonArraySuccess(result, total)
 }
 
 // ChangeStatus 变更状态
-func (c *UsersController) ChangeStatus(local *frame.FrameStack, id int, status int) *vo2.JsonResult {
-	var f func() = func() {
-		conn := frame.OpenSqlConnection(0)
-		conn.BeginTransaction()
-
-		local.Push()
-		local.Set(frame.DbConnectKey, conn)
-
-		defer func() {
-			local.Pop()
-			if err := recover(); err != nil {
-				conn.Rollback()
-				panic(err)
-			} else {
-				conn.Commit()
-			}
-		}()
-		c.usersService.ChangeStatus(local, id, status)
-	}
-	f()
+func (c *UsersController) ChangeStatus(local *context.LocalStack, id int, status int) *vo2.JsonResult {
+	c.usersService.ChangeStatus(local, id, status)
 	return util.JsonUtil.BuildJsonSuccess(nil)
 }
 
 // UsersControllerImpl 控制器单例
-var UsersControllerImpl UsersController = UsersController{}
+var userController UsersController = UsersController{}
 
-// UsersRequestController 控制器请求配置
-var UsersRequestController frame.RequestController = frame.RequestController{
-	HttpPath: "/users",
-	Target:   &UsersControllerImpl,
-	Methods: []frame.RequestMethod{
-		{
-			HttpMethod: "post",
-			HttpPath:   "/",
-			MethodName: "Save",
-		},
-		{
-			HttpMethod: "put",
-			HttpPath:   "/",
-			MethodName: "Update",
-		},
-		{
-			HttpMethod:     "delete",
-			HttpPath:       "/",
-			MethodName:     "Delete",
-			MethodParamter: "_,id",
-		},
-		{
-			HttpMethod:     "get",
-			HttpPath:       "/",
-			MethodName:     "Get",
-			MethodParamter: "_,id",
-		},
-		{
-			HttpMethod: "post",
-			HttpPath:   "/list",
-			MethodName: "List",
-		},
-		{
-			HttpMethod:     "post",
-			HttpPath:       "/status/change",
-			MethodName:     "ChangeStatus",
-			MethodParamter: "_,id,status",
-		},
-	},
+func GetUserController() *UsersController {
+	return &userController
 }
 
 func init() {
 
-	// 初始化service
-	UsersControllerImpl.usersService = &service.UsersServiceImpl
+	// 初始化
+	userController.usersService = service.GetUsersService()
 
-	// 初始化请求路由
-	frame.DispatchServlet.AddRequestMapping(&UsersRequestController)
+	//http.DispatchServlet.AddRequestMapping(&userController)
 }

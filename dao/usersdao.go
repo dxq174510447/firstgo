@@ -1,190 +1,241 @@
 package dao
 
 import (
-	"firstgo/frame"
+	"firstgo/frame/context"
+	"firstgo/frame/db"
+	"firstgo/frame/proxy"
 	"firstgo/povo/po"
 	"firstgo/povo/vo"
 )
 
 type UsersDao struct {
+	Proxy_               *proxy.ProxyClass
+	Save_                func(local *context.LocalStack, data *po.Users, self *UsersDao) int
+	Update_              func(local *context.LocalStack, data *po.Users, self *UsersDao) int
+	Delete_              func(local *context.LocalStack, id int, self *UsersDao) int
+	Get_                 func(local *context.LocalStack, id int, self *UsersDao) *vo.UsersVo
+	ChangeStatus_        func(local *context.LocalStack, id int, status int, self *UsersDao) int
+	List_                func(local *context.LocalStack, param *vo.UsersParam, self *UsersDao) ([]*vo.UsersVo, int)
+	FindByNameExcludeId_ func(local *context.LocalStack, name string, id int, self *UsersDao) int
+	FindByName_          func(local *context.LocalStack, name string, self *UsersDao) int
 }
 
-func (c *UsersDao) Save(local *frame.FrameStack, data *po.Users) int {
-	con := local.Get(frame.DbConnectKey).(*frame.DbConnection)
-
-	stmt, err := con.Con.PrepareContext(con.Ctx, "insert into users(name,password,status) values (?,?,?)")
-	if err != nil {
-		panic(err)
-	}
-	defer stmt.Close()
-	result, err1 := stmt.Exec(data.Name, data.Password, data.Status)
-	if err1 != nil {
-		panic(err1)
-	}
-	ids, _ := result.LastInsertId()
-	affect, _ := result.RowsAffected()
-	data.Id = int(ids)
-	return int(affect)
+func (c *UsersDao) Save(local *context.LocalStack, data *po.Users) int {
+	return c.Save_(local, data, c)
 }
 
-func (c *UsersDao) Update(local *frame.FrameStack, data *po.Users) int {
-	con := local.Get(frame.DbConnectKey).(*frame.DbConnection)
-
-	stmt, err := con.Con.PrepareContext(con.Ctx, "update users set name=?,password=?,status=? where id=?")
-	if err != nil {
-		panic(err)
-	}
-	defer stmt.Close()
-	result, err1 := stmt.Exec(data.Name, data.Password, data.Status, data.Id)
-	if err1 != nil {
-		panic(err1)
-	}
-	affect, _ := result.RowsAffected()
-	return int(affect)
+func (c *UsersDao) Update(local *context.LocalStack, data *po.Users) int {
+	return c.Update_(local, data, c)
 }
 
-func (c *UsersDao) Delete(local *frame.FrameStack, id int) int {
-	con := local.Get(frame.DbConnectKey).(*frame.DbConnection)
-
-	stmt, err := con.Con.PrepareContext(con.Ctx, "delete from users  where id=?")
-	if err != nil {
-		panic(err)
-	}
-	defer stmt.Close()
-	result, err1 := stmt.Exec(id)
-	if err1 != nil {
-		panic(err1)
-	}
-	affect, _ := result.RowsAffected()
-	return int(affect)
+func (c *UsersDao) Delete(local *context.LocalStack, id int) int {
+	return c.Delete_(local, id, c)
 }
 
-func (c *UsersDao) Get(local *frame.FrameStack, id int) *vo.UsersVo {
-	con := local.Get(frame.DbConnectKey).(*frame.DbConnection)
-
-	stmt, err := con.Con.PrepareContext(con.Ctx, "select id,name,status from users where id=?")
-	if err != nil {
-		panic(err)
-	}
-	defer stmt.Close()
-	result := stmt.QueryRow(id)
-
-	data := vo.UsersVo{}
-	if err := result.Scan(&data.Id, &data.Name, &data.Status); err != nil {
-		return nil
-	}
-	return &data
+func (c *UsersDao) Get(local *context.LocalStack, id int) *vo.UsersVo {
+	return c.Get_(local, id, c)
 }
 
-func (c *UsersDao) ChangeStatus(local *frame.FrameStack, id int, status int) int {
-	con := local.Get(frame.DbConnectKey).(*frame.DbConnection)
-
-	stmt, err := con.Con.PrepareContext(con.Ctx, "update users set status=? where id=?")
-	if err != nil {
-		panic(err)
-	}
-	defer stmt.Close()
-	result, err1 := stmt.Exec(status, id)
-	if err1 != nil {
-		panic(err1)
-	}
-	affect, _ := result.RowsAffected()
-	return int(affect)
+func (c *UsersDao) ChangeStatus(local *context.LocalStack, id int, status int) int {
+	return c.ChangeStatus_(local, id, status, c)
 }
 
-func (c *UsersDao) List(local *frame.FrameStack, param *vo.UsersParam) ([]*vo.UsersVo, int) {
-	con := local.Get(frame.DbConnectKey).(*frame.DbConnection)
-	var pageSize int = 10
-	if param.PageSize > 0 {
-		pageSize = param.PageSize
-	}
-	var pageNo int = 1
-	if param.Page >= 1 {
-		pageNo = param.Page
-	}
+func (c *UsersDao) List(local *context.LocalStack, param *vo.UsersParam) ([]*vo.UsersVo, int) {
+	return c.List_(local, param, c)
+}
 
-	var firstrow int = (pageNo - 1) * pageSize
+func (c *UsersDao) FindByNameExcludeId(local *context.LocalStack, name string, id int) int {
+	return c.FindByNameExcludeId_(local, name, id, c)
+}
 
-	stmt, err := con.Con.PrepareContext(con.Ctx, "select id,name,status from users order by id desc limit ?,? ")
-	if err != nil {
-		panic(err)
-	}
-	defer func() {
-		stmt.Close()
-	}()
-	result, err1 := stmt.Query(firstrow, pageSize)
-	defer func() {
-		if result != nil {
-			result.Close() //可以关闭掉未scan连接一直占用
+func (c *UsersDao) FindByName(local *context.LocalStack, name string) int {
+	return c.FindByName_(local, name, c)
+}
+
+func (c *UsersDao) ProxyTarget() *proxy.ProxyClass {
+	return c.Proxy_
+}
+
+var usersDao UsersDao = UsersDao{
+	Proxy_: &proxy.ProxyClass{
+		Annotations: []*proxy.AnnotationClass{
+			&proxy.AnnotationClass{
+				Name: proxy.AnnotationDao,
+			},
+		},
+	},
+	Save_: func(local *context.LocalStack, data *po.Users, self *UsersDao) int {
+		con := local.Get(db.DataBaseConnectKey).(*db.DatabaseConnection)
+
+		stmt, err := con.Con.PrepareContext(con.Ctx, "insert into users(name,password,status) values (?,?,?)")
+		if err != nil {
+			panic(err)
 		}
-	}()
+		defer stmt.Close()
+		result, err1 := stmt.Exec(data.Name, data.Password, data.Status)
+		if err1 != nil {
+			panic(err1)
+		}
+		ids, _ := result.LastInsertId()
+		affect, _ := result.RowsAffected()
+		data.Id = int(ids)
+		return int(affect)
+	},
+	Update_: func(local *context.LocalStack, data *po.Users, self *UsersDao) int {
+		con := local.Get(db.DataBaseConnectKey).(*db.DatabaseConnection)
 
-	if err1 != nil {
-		panic(err1)
-	}
-	dd := make([]*vo.UsersVo, pageSize)
-	queryCount := 0
-	for result.Next() {
+		stmt, err := con.Con.PrepareContext(con.Ctx, "update users set name=?,password=?,status=? where id=?")
+		if err != nil {
+			panic(err)
+		}
+		defer stmt.Close()
+		result, err1 := stmt.Exec(data.Name, data.Password, data.Status, data.Id)
+		if err1 != nil {
+			panic(err1)
+		}
+		affect, _ := result.RowsAffected()
+		return int(affect)
+	},
+	Delete_: func(local *context.LocalStack, id int, self *UsersDao) int {
+		con := local.Get(db.DataBaseConnectKey).(*db.DatabaseConnection)
+
+		stmt, err := con.Con.PrepareContext(con.Ctx, "delete from users  where id=?")
+		if err != nil {
+			panic(err)
+		}
+		defer stmt.Close()
+		result, err1 := stmt.Exec(id)
+		if err1 != nil {
+			panic(err1)
+		}
+		affect, _ := result.RowsAffected()
+		return int(affect)
+	},
+	Get_: func(local *context.LocalStack, id int, self *UsersDao) *vo.UsersVo {
+		con := local.Get(db.DataBaseConnectKey).(*db.DatabaseConnection)
+
+		stmt, err := con.Con.PrepareContext(con.Ctx, "select id,name,status from users where id=?")
+		if err != nil {
+			panic(err)
+		}
+		defer stmt.Close()
+		result := stmt.QueryRow(id)
+
 		data := vo.UsersVo{}
-		result.Scan(&data.Id, &data.Name, &data.Status) //不scan会导致连接不释放
-		dd[queryCount] = &data
-		queryCount++
-	}
+		if err := result.Scan(&data.Id, &data.Name, &data.Status); err != nil {
+			return nil
+		}
+		return &data
+	},
+	ChangeStatus_: func(local *context.LocalStack, id int, status int, self *UsersDao) int {
+		con := local.Get(db.DataBaseConnectKey).(*db.DatabaseConnection)
 
-	if queryCount > 0 {
-		dd = dd[0:queryCount]
-	}
+		stmt, err := con.Con.PrepareContext(con.Ctx, "update users set status=? where id=?")
+		if err != nil {
+			panic(err)
+		}
+		defer stmt.Close()
+		result, err1 := stmt.Exec(status, id)
+		if err1 != nil {
+			panic(err1)
+		}
+		affect, _ := result.RowsAffected()
+		return int(affect)
+	},
+	List_: func(local *context.LocalStack, param *vo.UsersParam, self *UsersDao) ([]*vo.UsersVo, int) {
+		con := local.Get(db.DataBaseConnectKey).(*db.DatabaseConnection)
+		var pageSize int = 10
+		if param.PageSize > 0 {
+			pageSize = param.PageSize
+		}
+		var pageNo int = 1
+		if param.Page >= 1 {
+			pageNo = param.Page
+		}
 
-	stmt2, err2 := con.Con.PrepareContext(con.Ctx, "select count(id) from  users ")
-	if err2 != nil {
-		panic(err2)
-	}
-	defer func() {
-		stmt2.Close()
-	}()
-	result2 := stmt2.QueryRow()
+		var firstrow int = (pageNo - 1) * pageSize
 
-	var totalRow int = 0
-	result2.Scan(&totalRow)
-	return dd, totalRow
+		stmt, err := con.Con.PrepareContext(con.Ctx, "select id,name,status from users order by id desc limit ?,? ")
+		if err != nil {
+			panic(err)
+		}
+		defer func() {
+			stmt.Close()
+		}()
+		result, err1 := stmt.Query(firstrow, pageSize)
+		defer func() {
+			if result != nil {
+				result.Close() //可以关闭掉未scan连接一直占用
+			}
+		}()
+
+		if err1 != nil {
+			panic(err1)
+		}
+		dd := make([]*vo.UsersVo, pageSize)
+		queryCount := 0
+		for result.Next() {
+			data := vo.UsersVo{}
+			result.Scan(&data.Id, &data.Name, &data.Status) //不scan会导致连接不释放
+			dd[queryCount] = &data
+			queryCount++
+		}
+
+		if queryCount > 0 {
+			dd = dd[0:queryCount]
+		}
+
+		stmt2, err2 := con.Con.PrepareContext(con.Ctx, "select count(id) from  users ")
+		if err2 != nil {
+			panic(err2)
+		}
+		defer func() {
+			stmt2.Close()
+		}()
+		result2 := stmt2.QueryRow()
+
+		var totalRow int = 0
+		result2.Scan(&totalRow)
+		return dd, totalRow
+	},
+	FindByNameExcludeId_: func(local *context.LocalStack, name string, id int, self *UsersDao) int {
+		con := local.Get(db.DataBaseConnectKey).(*db.DatabaseConnection)
+
+		stmt2, err2 := con.Con.PrepareContext(con.Ctx, "select count(id) from  users where name = ? and id != ? ")
+		if err2 != nil {
+			panic(err2)
+		}
+		defer func() {
+			stmt2.Close()
+		}()
+		result2 := stmt2.QueryRow(name, id)
+
+		var totalRow int = 0
+		result2.Scan(&totalRow)
+		return totalRow
+	},
+	FindByName_: func(local *context.LocalStack, name string, self *UsersDao) int {
+		con := local.Get(db.DataBaseConnectKey).(*db.DatabaseConnection)
+
+		stmt2, err2 := con.Con.PrepareContext(con.Ctx, "select count(id) from  users where name = ? ")
+		if err2 != nil {
+			panic(err2)
+		}
+		defer func() {
+			stmt2.Close()
+		}()
+		result2 := stmt2.QueryRow(name)
+
+		var totalRow int = 0
+		result2.Scan(&totalRow)
+		return totalRow
+	},
 }
 
-func (c *UsersDao) FindByNameExcludeId(local *frame.FrameStack, name string, id int) int {
-	con := local.Get(frame.DbConnectKey).(*frame.DbConnection)
-
-	stmt2, err2 := con.Con.PrepareContext(con.Ctx, "select count(id) from  users where name = ? and id != ? ")
-	if err2 != nil {
-		panic(err2)
-	}
-	defer func() {
-		stmt2.Close()
-	}()
-	result2 := stmt2.QueryRow(name, id)
-
-	var totalRow int = 0
-	result2.Scan(&totalRow)
-	return totalRow
+func GetUsersDao() *UsersDao {
+	return &usersDao
 }
-
-func (c *UsersDao) FindByName(local *frame.FrameStack, name string) int {
-	con := local.Get(frame.DbConnectKey).(*frame.DbConnection)
-
-	stmt2, err2 := con.Con.PrepareContext(con.Ctx, "select count(id) from  users where name = ? ")
-	if err2 != nil {
-		panic(err2)
-	}
-	defer func() {
-		stmt2.Close()
-	}()
-	result2 := stmt2.QueryRow(name)
-
-	var totalRow int = 0
-	result2.Scan(&totalRow)
-	return totalRow
-}
-
-var UsersDaoImpl UsersDao = UsersDao{}
 
 func init() {
-
+	proxy.AddClassProxy(proxy.ProxyTarger(&usersDao))
 }

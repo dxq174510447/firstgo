@@ -1,7 +1,8 @@
-package frame
+package http
 
 import (
 	"encoding/json"
+	"firstgo/frame/context"
 	"firstgo/frame/vo"
 	"firstgo/util"
 	"fmt"
@@ -51,8 +52,8 @@ func (d *dispatchServlet) renderExceptionJson(response http.ResponseWriter, requ
 
 	var errJson *vo.JsonResult
 	switch exception.(type) {
-	case *FrameException:
-		value, _ := exception.(*FrameException)
+	case *context.FrameException:
+		value, _ := exception.(*context.FrameException)
 		errJson = util.JsonUtil.BuildJsonFailure(value.Code, value.Message, nil)
 	default:
 		tip := fmt.Sprintln(exception)
@@ -95,7 +96,7 @@ func (d *dispatchServlet) AddRequestMapping(mapping *RequestController) {
 		return func(response http.ResponseWriter, request *http.Request) {
 			//fmt.Println(request.URL.Path)
 			var requestMethod RequestMethod
-			local := NewFrameStack()
+			local := context.NewLocalStack()
 			defer func() {
 				local.Pop()
 				local = nil
