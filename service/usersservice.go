@@ -18,7 +18,7 @@ type UsersService struct {
 	Delete_       func(local *context.LocalStack, id int, self *UsersService)
 	Get_          func(local *context.LocalStack, id int, self *UsersService) *vo.UsersVo
 	ChangeStatus_ func(local *context.LocalStack, id int, status int, self *UsersService)
-	List_         func(local *context.LocalStack, param *vo.UsersParam, self *UsersService) ([]*vo.UsersVo, int)
+	List_         func(local *context.LocalStack, param *vo.UsersParam, self *UsersService) *vo.UsersPage
 }
 
 func (c *UsersService) Save(local *context.LocalStack, data *po.Users) *vo.UsersVo {
@@ -40,7 +40,7 @@ func (c *UsersService) Get(local *context.LocalStack, id int) *vo.UsersVo {
 func (c *UsersService) ChangeStatus(local *context.LocalStack, id int, status int) {
 	c.ChangeStatus_(local, id, status, c)
 }
-func (c *UsersService) List(local *context.LocalStack, param *vo.UsersParam) ([]*vo.UsersVo, int) {
+func (c *UsersService) List(local *context.LocalStack, param *vo.UsersParam) *vo.UsersPage {
 	return c.List_(local, param, c)
 }
 
@@ -96,7 +96,7 @@ var usersService UsersService = UsersService{
 	Delete_: func(local *context.LocalStack, id int, self *UsersService) {
 		self.usersDao.Delete(local, id)
 	},
-	List_: func(local *context.LocalStack, param *vo.UsersParam, self *UsersService) ([]*vo.UsersVo, int) {
+	List_: func(local *context.LocalStack, param *vo.UsersParam, self *UsersService) *vo.UsersPage {
 		return self.usersDao.List(local, param)
 	},
 	Update_: func(local *context.LocalStack, data *po.Users, self *UsersService) *vo.UsersVo {
@@ -128,8 +128,9 @@ func GetUsersService() *UsersService {
 
 func init() {
 
+	proxy.AddClassProxy(proxy.ProxyTarger(&usersService))
+
 	// 初始化
 	usersService.usersDao = dao.GetUsersDao()
 
-	proxy.AddClassProxy(proxy.ProxyTarger(&usersService))
 }

@@ -15,7 +15,7 @@ type UsersDao struct {
 	Delete_              func(local *context.LocalStack, id int, self *UsersDao) int
 	Get_                 func(local *context.LocalStack, id int, self *UsersDao) *vo.UsersVo
 	ChangeStatus_        func(local *context.LocalStack, id int, status int, self *UsersDao) int
-	List_                func(local *context.LocalStack, param *vo.UsersParam, self *UsersDao) ([]*vo.UsersVo, int)
+	List_                func(local *context.LocalStack, param *vo.UsersParam, self *UsersDao) *vo.UsersPage
 	FindByNameExcludeId_ func(local *context.LocalStack, name string, id int, self *UsersDao) int
 	FindByName_          func(local *context.LocalStack, name string, self *UsersDao) int
 }
@@ -40,7 +40,7 @@ func (c *UsersDao) ChangeStatus(local *context.LocalStack, id int, status int) i
 	return c.ChangeStatus_(local, id, status, c)
 }
 
-func (c *UsersDao) List(local *context.LocalStack, param *vo.UsersParam) ([]*vo.UsersVo, int) {
+func (c *UsersDao) List(local *context.LocalStack, param *vo.UsersParam) *vo.UsersPage {
 	return c.List_(local, param, c)
 }
 
@@ -142,7 +142,7 @@ var usersDao UsersDao = UsersDao{
 		affect, _ := result.RowsAffected()
 		return int(affect)
 	},
-	List_: func(local *context.LocalStack, param *vo.UsersParam, self *UsersDao) ([]*vo.UsersVo, int) {
+	List_: func(local *context.LocalStack, param *vo.UsersParam, self *UsersDao) *vo.UsersPage {
 		con := local.Get(db.DataBaseConnectKey).(*db.DatabaseConnection)
 		var pageSize int = 10
 		if param.PageSize > 0 {
@@ -196,7 +196,7 @@ var usersDao UsersDao = UsersDao{
 
 		var totalRow int = 0
 		result2.Scan(&totalRow)
-		return dd, totalRow
+		return &vo.UsersPage{Total: totalRow, Data: dd}
 	},
 	FindByNameExcludeId_: func(local *context.LocalStack, name string, id int, self *UsersDao) int {
 		con := local.Get(db.DataBaseConnectKey).(*db.DatabaseConnection)

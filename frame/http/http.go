@@ -3,6 +3,8 @@ package http
 import (
 	"encoding/json"
 	"firstgo/frame/context"
+	"firstgo/frame/exception"
+	"firstgo/frame/proxy"
 	"firstgo/frame/vo"
 	"firstgo/util"
 	"fmt"
@@ -13,30 +15,38 @@ import (
 	"strings"
 )
 
-type RequestController struct {
-	Target interface{}
-
-	HttpPath string
-
-	Methods []RequestMethod
-}
-
-type RequestMethod struct {
-
-	//http method get,post,put,delete,*
-	HttpMethod string
+type RestAnnotationSetting struct {
 
 	//对应path路径 以/开头
 	HttpPath string
 
-	//对应实现类的方法名
-	MethodName string
+	//http method get,post,put,delete,*
+	HttpMethod string
 
 	//方法对应的request参数名
 	MethodParamter string
 
 	//默认的渲染类型 json html 默认是json
 	MethodRender string
+}
+
+func NewRestAnnotation(httpPath string,
+	httpMethod string,
+	methodParamter string,
+	methodRender string) []*proxy.AnnotationClass {
+	return []*proxy.AnnotationClass{
+		&proxy.AnnotationClass{
+			Name: AnnotationRestController,
+			Value: map[string]interface{}{
+				AnnotationValueRestKey: &RestAnnotationSetting{
+					HttpPath:       httpPath,
+					HttpMethod:     httpMethod,
+					MethodParamter: methodParamter,
+					MethodRender:   methodRender,
+				},
+			},
+		},
+	}
 }
 
 type dispatchServlet struct {
@@ -48,15 +58,15 @@ func (d *dispatchServlet) renderJson(response http.ResponseWriter, request *http
 	a, _ := json.Marshal(result)
 	response.Write(a)
 }
-func (d *dispatchServlet) renderExceptionJson(response http.ResponseWriter, request *http.Request, exception interface{}) {
+func (d *dispatchServlet) renderExceptionJson(response http.ResponseWriter, request *http.Request, throwable interface{}) {
 
 	var errJson *vo.JsonResult
-	switch exception.(type) {
-	case *context.FrameException:
-		value, _ := exception.(*context.FrameException)
+	switch throwable.(type) {
+	case *exception.FrameException:
+		value, _ := throwable.(*exception.FrameException)
 		errJson = util.JsonUtil.BuildJsonFailure(value.Code, value.Message, nil)
 	default:
-		tip := fmt.Sprintln(exception)
+		tip := fmt.Sprintln(throwable)
 		errJson = util.JsonUtil.BuildJsonFailure1(tip, nil)
 	}
 

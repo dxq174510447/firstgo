@@ -27,7 +27,7 @@ func (d *DaoConnectProxyFilter) SetNext(next proxy.ProxyFilter) {
 }
 
 func (d *DaoConnectProxyFilter) Order() int {
-	return 5
+	return 15
 }
 
 var daoConnectProxyFilter DaoConnectProxyFilter = DaoConnectProxyFilter{}

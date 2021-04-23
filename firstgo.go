@@ -1,8 +1,13 @@
 package main
 
-import "net/http"
-import _ "firstgo/controller"
-import _ "firstgo/frame"
+import (
+	_ "firstgo/controller"
+	_ "firstgo/frame/context"
+	_ "firstgo/frame/db"
+	_ "firstgo/frame/http"
+	_ "firstgo/frame/proxy"
+	"net/http"
+)
 
 func main() {
 

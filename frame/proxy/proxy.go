@@ -35,8 +35,9 @@ func (m *methodInvoke) initFilter() {
 	var fs []ProxyFilter
 	var hasCreate map[string]string = make(map[string]string)
 
-	if m.clazz != nil && len(m.clazz.Annotations) > 0 {
-		for _, annotation := range m.clazz.Annotations {
+	// method level
+	if m.method != nil && len(m.method.Annotations) > 0 {
+		for _, annotation := range m.method.Annotations {
 			if factorys, ok := methodFilter[annotation.Name]; ok {
 				for _, factory := range factorys {
 					instance := factory.GetInstance(annotation.Value)
@@ -49,13 +50,11 @@ func (m *methodInvoke) initFilter() {
 		}
 	}
 
-	if m.method != nil && len(m.method.Annotations) > 0 {
-		for _, annotation := range m.method.Annotations {
-
+	if m.clazz != nil && len(m.clazz.Annotations) > 0 {
+		for _, annotation := range m.clazz.Annotations {
 			if _, ok := hasCreate[annotation.Name]; ok {
 				continue
 			}
-
 			if factorys, ok := methodFilter[annotation.Name]; ok {
 				for _, factory := range factorys {
 					instance := factory.GetInstance(annotation.Value)
@@ -66,6 +65,7 @@ func (m *methodInvoke) initFilter() {
 			}
 		}
 	}
+
 	if len(fs) > 0 {
 		if len(fs) > 1 {
 			sort.Slice(fs, func(i, j int) bool {
