@@ -58,11 +58,7 @@ func (c *UsersDao) ProxyTarget() *proxy.ProxyClass {
 
 var usersDao UsersDao = UsersDao{
 	Proxy_: &proxy.ProxyClass{
-		Annotations: []*proxy.AnnotationClass{
-			&proxy.AnnotationClass{
-				Name: proxy.AnnotationDao,
-			},
-		},
+		Annotations: proxy.NewSingleAnnotation(proxy.AnnotationDao, nil),
 	},
 	Save_: func(local *context.LocalStack, data *po.Users, self *UsersDao) int {
 		con := local.Get(db.DataBaseConnectKey).(*db.DatabaseConnection)

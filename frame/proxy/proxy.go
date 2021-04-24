@@ -144,6 +144,7 @@ func AddClassProxy(target ProxyTarger) {
 
 	//添加到映射中
 	clazz.Target = target
+	clazz.Name = clazzName
 	classProxy[clazzName] = clazz
 
 	//获取对象方法设置
@@ -174,8 +175,8 @@ func AddClassProxy(target ProxyTarger) {
 
 				proxyCall := func(command *methodInvoke) reflect.Value {
 					newCall := reflect.MakeFunc(rt.Field(i).Type, func(in []reflect.Value) []reflect.Value {
-						fmt.Println("agent begin")
-						defer fmt.Println("agent end")
+						fmt.Printf(" %s %s agent begin \n", invoker.clazz.Name, invoker.method.Name)
+						defer fmt.Printf(" %s %s agent end \n", invoker.clazz.Name, invoker.method.Name)
 						return command.invoke(in[0].Interface().(*context.LocalStack), in)
 					})
 					return newCall
@@ -190,4 +191,13 @@ func AddClassProxy(target ProxyTarger) {
 func GetClassName(target interface{}) string {
 	t := reflect.ValueOf(target).Elem().Type()
 	return fmt.Sprintf("%s/%s", t.PkgPath(), t.Name())
+}
+
+func NewSingleAnnotation(annotationName string, value map[string]interface{}) []*AnnotationClass {
+	return []*AnnotationClass{
+		&AnnotationClass{
+			Name:  annotationName,
+			Value: value,
+		},
+	}
 }

@@ -6,6 +6,7 @@ type AnnotationClass struct {
 }
 
 type ProxyClass struct {
+	Name        string
 	Target      interface{}
 	Methods     []*ProxyMethod
 	Annotations []*AnnotationClass

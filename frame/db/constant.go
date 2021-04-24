@@ -1,5 +1,7 @@
 package db
 
+import "firstgo/frame/context"
+
 const (
 	// TransactionReadOnly 只读 用于注解
 	TransactionReadOnly = "TransactionReadOnly_"
@@ -15,4 +17,17 @@ const (
 
 	//上下文中保存的数据库连接
 	DataBaseConnectKey = "DataBaseConnectKey_"
+	DataBaseTxKey      = "DataBaseTxKey_"
 )
+
+func SetDbConnection(local *context.LocalStack, con *DatabaseConnection) {
+	local.Set(DataBaseConnectKey, con)
+}
+
+func GetDbConnection(local *context.LocalStack) *DatabaseConnection {
+	db := local.Get(DataBaseConnectKey)
+	if db == nil {
+		return nil
+	}
+	return db.(*DatabaseConnection)
+}

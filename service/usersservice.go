@@ -50,43 +50,23 @@ func (c *UsersService) ProxyTarget() *proxy.ProxyClass {
 
 var usersService UsersService = UsersService{
 	Proxy_: &proxy.ProxyClass{
-		Annotations: []*proxy.AnnotationClass{
-			&proxy.AnnotationClass{
-				Name: proxy.AnnotationService,
-			},
-		},
+		Annotations: proxy.NewSingleAnnotation(proxy.AnnotationService, nil),
 		Methods: []*proxy.ProxyMethod{
 			&proxy.ProxyMethod{
-				Name: "Save",
-				Annotations: []*proxy.AnnotationClass{
-					&proxy.AnnotationClass{
-						Name: db.TransactionRequire,
-					},
-				},
+				Name:        "Save",
+				Annotations: proxy.NewSingleAnnotation(db.TransactionRequire, nil),
 			},
 			&proxy.ProxyMethod{
-				Name: "Update",
-				Annotations: []*proxy.AnnotationClass{
-					&proxy.AnnotationClass{
-						Name: db.TransactionRequire,
-					},
-				},
+				Name:        "Update",
+				Annotations: proxy.NewSingleAnnotation(db.TransactionRequire, nil),
 			},
 			&proxy.ProxyMethod{
-				Name: "Delete",
-				Annotations: []*proxy.AnnotationClass{
-					&proxy.AnnotationClass{
-						Name: db.TransactionRequire,
-					},
-				},
+				Name:        "Delete",
+				Annotations: proxy.NewSingleAnnotation(db.TransactionRequire, nil),
 			},
 			&proxy.ProxyMethod{
-				Name: "ChangeStatus",
-				Annotations: []*proxy.AnnotationClass{
-					&proxy.AnnotationClass{
-						Name: db.TransactionRequire,
-					},
-				},
+				Name:        "ChangeStatus",
+				Annotations: proxy.NewSingleAnnotation(db.TransactionRequire, nil),
 			},
 		},
 	},

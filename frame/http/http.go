@@ -1,6 +1,7 @@
 package http
 
 import (
+	"bytes"
 	"encoding/json"
 	"firstgo/frame/context"
 	"firstgo/frame/exception"
@@ -11,6 +12,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"reflect"
+	"runtime"
 	"strconv"
 	"strings"
 )
@@ -75,24 +77,67 @@ func (d *dispatchServlet) renderExceptionJson(response http.ResponseWriter, requ
 	response.Write(a)
 }
 
+func getRequestAnnotationSetting(annotations []*proxy.AnnotationClass) *RestAnnotationSetting {
+	for _, annotation := range annotations {
+		if annotation.Name == AnnotationRestController {
+			r, _ := annotation.Value[AnnotationValueRestKey]
+			return r.(*RestAnnotationSetting)
+		}
+	}
+	return nil
+}
+
+func printStackTrace(err interface{}) string {
+	buf := new(bytes.Buffer)
+	fmt.Fprintf(buf, "%v\n", err)
+	for i := 1; ; i++ {
+		pc, file, line, ok := runtime.Caller(i)
+		if !ok {
+			break
+		}
+		fmt.Fprintf(buf, "%s:%d (0x%x)\n", file, line, pc)
+	}
+	return buf.String()
+}
+
 // AddRequestMapping 思路是根据path前缀匹配到controller，在根据path和method去匹配controller具体的method
-func (d *dispatchServlet) AddRequestMapping(mapping *RequestController) {
-	var sp string = d.contextPath
+func AddRequestMapping(target proxy.ProxyTarger) {
+
+	proxy.AddClassProxy(target)
+
+	//context-path
+	var sp string = DispatchServlet.contextPath
 	if sp == "/" {
 		sp = ""
 	}
-	var cp = mapping.HttpPath
-	if cp == "/" {
+	var classRestSetting *RestAnnotationSetting = getRequestAnnotationSetting(target.ProxyTarget().Annotations)
+
+	//class-path
+	var cp string = classRestSetting.HttpPath
+	if classRestSetting.HttpPath == "/" {
 		cp = ""
 	}
 	var prefix = fmt.Sprintf("%s%s", sp, cp)
 	f := func() func(http.ResponseWriter, *http.Request) {
+
+		//context-path/class-path
 		var pf string = prefix
-		var target interface{} = mapping.Target
-		var methodRef = make(map[string]RequestMethod)
-		for _, method := range mapping.Methods {
-			var hm = strings.ToLower(method.HttpMethod)
-			var hp = method.HttpPath
+
+		//proxySetting
+		var proxySetting *proxy.ProxyClass = target.ProxyTarget()
+
+		//(post-/save) --> proxymethod
+		var methodRef = make(map[string]*proxy.ProxyMethod)
+		for _, method := range proxySetting.Methods {
+			// method restannotation
+			methodRestSetting := getRequestAnnotationSetting(method.Annotations)
+			if methodRestSetting == nil {
+				continue
+			}
+
+			//http method
+			var hm = strings.ToLower(methodRestSetting.HttpMethod)
+			var hp = methodRestSetting.HttpPath
 			if hp == "/" {
 				hp = ""
 			}
@@ -105,47 +150,55 @@ func (d *dispatchServlet) AddRequestMapping(mapping *RequestController) {
 
 		return func(response http.ResponseWriter, request *http.Request) {
 			//fmt.Println(request.URL.Path)
-			var requestMethod RequestMethod
+			var proxyMethod *proxy.ProxyMethod
+			var methodRequestSetting *RestAnnotationSetting
 			local := context.NewLocalStack()
 			defer func() {
 				local.Pop()
 				local = nil
 
 				if err := recover(); err != nil {
-
-					if requestMethod.MethodRender == "" || requestMethod.MethodRender == "json" {
-						d.renderExceptionJson(response, request, err)
+					s := printStackTrace(err)
+					fmt.Println(s)
+					if methodRequestSetting.MethodRender == "" || methodRequestSetting.MethodRender == "json" {
+						DispatchServlet.renderExceptionJson(response, request, err)
 					}
 
 				}
 			}()
 
+			// 去除?之后的
 			url := util.ConfigUtil.ClearHttpPath(request.URL.Path)
 			url = util.ConfigUtil.RemovePrefix(url, pf)
 			httpMethod := strings.ToLower(request.Method)
 			mk := fmt.Sprintf("%s-%s", httpMethod, url)
-			//		fmt.Println(mk)
 
 			if _, ok := methodRef[mk]; ok {
-				requestMethod = methodRef[mk]
+				proxyMethod = methodRef[mk]
 			} else {
 				mk = fmt.Sprintf("%s-%s", "*", url)
-				requestMethod = methodRef[mk]
+				proxyMethod = methodRef[mk]
 			}
-			methodType := reflect.ValueOf(target).MethodByName(requestMethod.MethodName)
-			paramlen := methodType.Type().NumIn()
+
+			// proxyMethod== nil 404 TODO
+
+			methodRequestSetting = getRequestAnnotationSetting(proxyMethod.Annotations)
+
+			methodInvoker := reflect.ValueOf(target).MethodByName(proxyMethod.Name)
+			paramlen := methodInvoker.Type().NumIn()
 
 			var result []reflect.Value
 			if paramlen == 0 {
-				result = reflect.ValueOf(target).MethodByName(requestMethod.MethodName).Call([]reflect.Value{})
+				result = methodInvoker.Call([]reflect.Value{})
 			} else {
 				var paramter []string
-				if requestMethod.MethodParamter != "" {
-					paramter = strings.Split(requestMethod.MethodParamter, ",")
+				if methodRequestSetting.MethodParamter != "" {
+					paramter = strings.Split(methodRequestSetting.MethodParamter, ",")
 				}
+
 				param := make([]reflect.Value, paramlen)
 				for i := 0; i < paramlen; i++ {
-					pt := methodType.Type().In(i)
+					pt := methodInvoker.Type().In(i)
 					switch pt.Kind() {
 					case reflect.Ptr:
 						if pt.Elem() == reflect.TypeOf(*request) {
@@ -155,6 +208,7 @@ func (d *dispatchServlet) AddRequestMapping(mapping *RequestController) {
 						} else {
 							nt := reflect.New(pt.Elem())
 							ntpr := nt.Interface()
+
 							body, err := ioutil.ReadAll(request.Body)
 							if err != nil {
 								panic(fmt.Errorf("read requestbody error"))
@@ -197,10 +251,10 @@ func (d *dispatchServlet) AddRequestMapping(mapping *RequestController) {
 						panic(fmt.Errorf("struct only ptr"))
 					}
 				}
-				result = reflect.ValueOf(target).MethodByName(requestMethod.MethodName).Call(param)
+				result = methodInvoker.Call(param)
 			}
-			if len(result) == 1 && requestMethod.MethodRender == "" || requestMethod.MethodRender == "json" {
-				d.renderJson(response, request, result[0].Interface())
+			if len(result) == 1 && methodRequestSetting.MethodRender == "" || methodRequestSetting.MethodRender == "json" {
+				DispatchServlet.renderJson(response, request, result[0].Interface())
 			}
 		}
 	}()

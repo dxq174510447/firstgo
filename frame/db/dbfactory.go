@@ -6,6 +6,7 @@ import (
 	"firstgo/util"
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
+	"strconv"
 	"time"
 )
 
@@ -43,30 +44,45 @@ type DatabaseConnection struct {
 	Ctx         context.Context
 	TxOpt       *sql.TxOptions
 	Transaction *sql.Tx
+	ConnectId   string
 }
 
 func (d *DatabaseConnection) Close() {
-	//no need toClose
+	//不用释放
 }
 
 func (d *DatabaseConnection) BeginTransaction() {
+	// 如果是只读事物 一定要try catch 最终要设置连接为 可读可写
+	//TODO read only tx
 	//SET autocommit = 0
 	//tx,err := d.Con.BeginTx(d.Ctx,d.TxOpt) //好像版本有问题 触发失败
 	//if err != nil {
 	//	panic(err)
 	//}
 	//d.Transaction = tx
+	if d.TxOpt.ReadOnly {
+		d.Con.ExecContext(d.Ctx, "set session transaction read only")
+	}
+
 	d.Con.ExecContext(d.Ctx, "begin")
 }
 
 func (d *DatabaseConnection) Commit() {
 	//d.Transaction.Commit()
 	d.Con.ExecContext(d.Ctx, "commit")
+
+	if d.TxOpt.ReadOnly {
+		d.Con.ExecContext(d.Ctx, "set session transaction read write")
+	}
 }
 
 func (d *DatabaseConnection) Rollback() {
 	//d.Transaction.Rollback()
 	d.Con.ExecContext(d.Ctx, "rollback")
+
+	if d.TxOpt.ReadOnly {
+		d.Con.ExecContext(d.Ctx, "set session transaction read write")
+	}
 }
 
 // OpenSqlConnection 是否只读 1是 0否
@@ -82,11 +98,26 @@ func OpenSqlConnection(readOnly int) *DatabaseConnection {
 	var key string = DataBaseDefaultKey
 	var db *sql.DB = databaseRouter[key]
 	conn, _ := db.Conn(ctx)
+
+	//获取connectid
+	stmt2, err2 := conn.PrepareContext(ctx, " select connection_id() ")
+	if err2 != nil {
+		panic(err2)
+	}
+	defer func() {
+		stmt2.Close()
+	}()
+	result2 := stmt2.QueryRow()
+
+	var connectId int = 0
+	result2.Scan(&connectId)
+
 	return &DatabaseConnection{
-		Db:    db,
-		Con:   conn,
-		Ctx:   ctx,
-		TxOpt: &txOpt,
+		Db:        db,
+		Con:       conn,
+		Ctx:       ctx,
+		TxOpt:     &txOpt,
+		ConnectId: strconv.Itoa(connectId),
 	}
 }
 
