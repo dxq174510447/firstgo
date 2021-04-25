@@ -34,6 +34,10 @@ func (f *LocalStack) Set(key string, value interface{}) {
 	top[key] = value
 }
 
+func (f *LocalStack) Destroy() {
+	f.element = nil
+}
+
 // Get 从栈中依次取出环境变量key，从栈顶开始
 func (f *LocalStack) Get(key string) interface{} {
 	if len(f.element) == 0 {

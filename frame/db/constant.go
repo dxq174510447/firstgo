@@ -1,6 +1,8 @@
 package db
 
-import "firstgo/frame/context"
+import (
+	"firstgo/frame/context"
+)
 
 const (
 	// TransactionReadOnly 只读 用于注解

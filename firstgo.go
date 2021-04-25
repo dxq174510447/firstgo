@@ -6,6 +6,7 @@ import (
 	_ "firstgo/frame/db"
 	_ "firstgo/frame/http"
 	_ "firstgo/frame/proxy"
+	_ "firstgo/service/httpfilter"
 	"net/http"
 )
 

@@ -9,6 +9,7 @@ import (
 	"firstgo/povo/vo"
 	"firstgo/service"
 	"firstgo/util"
+	"fmt"
 )
 
 // UsersController 不要直接初始化 首字母大写代表类
@@ -99,6 +100,15 @@ var userController UsersController = UsersController{
 		return result
 	},
 	Save_: func(local *context.LocalStack, param *vo.UsersAdd, self *UsersController) *vo.UsersVo {
+
+		user := util.WebUtil.GetThreadUser(local)
+
+		if user == nil {
+			fmt.Println("no user")
+		} else {
+			fmt.Println("current user", user.Name)
+		}
+
 		var data *po.Users = &po.Users{}
 		util.JsonUtil.Copy(param, data)
 
