@@ -16,10 +16,44 @@ func (d *TxRequireNewProxyFilter) Execute(context *context.LocalStack,
 	methodInfo *proxy.ProxyMethod,
 	invoker *reflect.Value,
 	arg []reflect.Value) []reflect.Value {
-	fmt.Println("TxRequireNewProxyFilter begin")
 
-	defer fmt.Println("TxRequireNewProxyFilter end")
+	fmt.Printf("TxRequireNewProxyFilter begin \n")
+	defer fmt.Printf("TxRequireNewProxyFilter end \n")
+
+	// 无论线程变量中有没有连接都创建一个新的
+	con := OpenSqlConnection(0)
+	fmt.Printf("当前线程初始化新的 connectionId %s \n", con.ConnectId)
+
+	// 将当前新的连接放入新的local变量中
+	context.Push()
+	SetDbConnection(context, con) //连接不用释放 close方法没用
+
+	// 启动事物
+	con.BeginTransaction()
+
+	defer func() {
+
+		if err := recover(); err != nil {
+			// 如果失败 回滚 继续往上抛错
+			con.Rollback()
+
+			con.Close()
+			// 去除新的local变量
+			context.Pop()
+
+			panic(err)
+		} else {
+			// 没有错误 就提交
+			con.Commit()
+
+			con.Close()
+			// 去除新的local变量
+			context.Pop()
+		}
+	}()
+
 	return d.Next.Execute(context, classInfo, methodInfo, invoker, arg)
+
 }
 
 func (d *TxRequireNewProxyFilter) SetNext(next proxy.ProxyFilter) {

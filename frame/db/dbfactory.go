@@ -6,6 +6,7 @@ import (
 	"firstgo/util"
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
+	"reflect"
 	"strconv"
 	"time"
 )
@@ -28,9 +29,9 @@ type DatabaseFactory struct {
 func (c *DatabaseFactory) NewDatabase() *sql.DB {
 	//user:password@tcp(localhost:5555)/dbname?characterEncoding=UTF-8
 	url := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8",
-		c.dbUser, c.dbPwd, c.dbPort, c.dbHost, c.dbName,
+		c.dbUser, c.dbPwd, c.dbHost, c.dbPort, c.dbName,
 	)
-	//fmt.Println(url)
+	fmt.Println(url)
 	db, _ := sql.Open("mysql", url)
 	db.SetConnMaxLifetime(time.Minute * 3)
 	db.SetMaxOpenConns(1000)
@@ -39,11 +40,13 @@ func (c *DatabaseFactory) NewDatabase() *sql.DB {
 }
 
 type DatabaseConnection struct {
-	Db          *sql.DB
-	Con         *sql.Conn
-	Ctx         context.Context
-	TxOpt       *sql.TxOptions
-	Transaction *sql.Tx
+	Db    *sql.DB
+	Con   *sql.Conn
+	Ctx   context.Context
+	TxOpt *sql.TxOptions
+
+	// Transaction 当前连接是否开启事物
+	Transaction bool
 	ConnectId   string
 }
 
@@ -65,6 +68,7 @@ func (d *DatabaseConnection) BeginTransaction() {
 	}
 
 	d.Con.ExecContext(d.Ctx, "begin")
+	d.Transaction = true
 }
 
 func (d *DatabaseConnection) Commit() {
@@ -74,6 +78,8 @@ func (d *DatabaseConnection) Commit() {
 	if d.TxOpt.ReadOnly {
 		d.Con.ExecContext(d.Ctx, "set session transaction read write")
 	}
+
+	d.Transaction = false
 }
 
 func (d *DatabaseConnection) Rollback() {
@@ -83,6 +89,8 @@ func (d *DatabaseConnection) Rollback() {
 	if d.TxOpt.ReadOnly {
 		d.Con.ExecContext(d.Ctx, "set session transaction read write")
 	}
+
+	d.Transaction = false
 }
 
 // OpenSqlConnection 是否只读 1是 0否
@@ -97,10 +105,17 @@ func OpenSqlConnection(readOnly int) *DatabaseConnection {
 	// 取默认的key
 	var key string = DataBaseDefaultKey
 	var db *sql.DB = databaseRouter[key]
-	conn, _ := db.Conn(ctx)
+	conn, err1 := db.Conn(ctx)
+
+	if err1 != nil {
+		fmt.Println(reflect.ValueOf(err1).Elem().String())
+		fmt.Println(err1)
+		panic(err1)
+	}
 
 	//获取connectid
-	stmt2, err2 := conn.PrepareContext(ctx, " select connection_id() ")
+	stmt2, err2 := conn.PrepareContext(ctx, "select connection_id()")
+
 	if err2 != nil {
 		panic(err2)
 	}
