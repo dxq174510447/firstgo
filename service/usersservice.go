@@ -95,6 +95,11 @@ var usersService UsersService = UsersService{
 		}
 
 		self.usersDao.Save(local, data)
+
+		if data.Status == -1 {
+			panic(exception.NewException(502, "状态不正确"))
+		}
+
 		return self.Get(local, data.Id)
 	},
 	ChangeStatus_: func(local *context.LocalStack, id int, status int, self *UsersService) {
