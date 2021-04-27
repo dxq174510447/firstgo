@@ -140,7 +140,7 @@ func GetUserController() *UsersController {
 
 func init() {
 
-	http.AddRequestMapping(proxy.ProxyTarger(&userController))
+	http.AddControllerProxyTarget(proxy.ProxyTarger(&userController))
 	// 初始化
 	userController.usersService = service.GetUsersService()
 

@@ -181,7 +181,7 @@ func GetDispatchServlet() *DispatchServlet {
 }
 
 // AddRequestMapping 思路是根据path前缀匹配到controller，在根据path和method去匹配controller具体的method
-func AddRequestMapping(target1 proxy.ProxyTarger) {
+func AddControllerProxyTarget(target1 proxy.ProxyTarger) {
 	proxy.AddClassProxy(target1)
 
 	var methodRef = make(map[string]*proxy.ProxyMethod)

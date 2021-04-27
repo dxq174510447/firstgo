@@ -1,45 +1,47 @@
-package db
+package filter
 
 import (
 	"firstgo/frame/context"
+	"firstgo/frame/db"
 	"firstgo/frame/proxy"
 	"fmt"
 	"reflect"
 )
 
-type TxRequireProxyFilter struct {
+// TxReadOnlyProxyFilter 只读事物
+type TxReadOnlyProxyFilter struct {
 	Next proxy.ProxyFilter
 }
 
-func (d *TxRequireProxyFilter) Execute(context *context.LocalStack,
+func (d *TxReadOnlyProxyFilter) Execute(context *context.LocalStack,
 	classInfo *proxy.ProxyClass,
 	methodInfo *proxy.ProxyMethod,
 	invoker *reflect.Value,
 	arg []reflect.Value) []reflect.Value {
 
-	fmt.Printf("TxRequireProxyFilter begin \n")
-	defer fmt.Printf("TxRequireProxyFilter end \n")
+	fmt.Printf("TxReadOnlyProxyFilter begin \n")
+	defer fmt.Printf("TxReadOnlyProxyFilter end \n")
 
-	dbcon := GetDbConnection(context)
+	dbcon := db.GetDbConnection(context)
 
 	addNewConnection := false
 
 	if dbcon == nil {
 		fmt.Printf("当前线程未检测到dbconn  \n")
 		addNewConnection = true
-	} else if dbcon != nil && dbcon.TxOpt.ReadOnly {
-		fmt.Printf("当前线程检测到dbconn connectid %s 但是是只读的 需要重新获取连接 \n", dbcon.ConnectId)
+	} else if dbcon != nil && !dbcon.TxOpt.ReadOnly {
+		fmt.Printf("当前线程检测到dbconn connectid %s 但是是可读可写 需要重新获取连接 \n", dbcon.ConnectId)
 		addNewConnection = true
 	}
 
 	if addNewConnection {
 		// 开启新的连接
-		con := OpenSqlConnection(0)
+		con := db.OpenSqlConnection(1)
 		fmt.Printf("当前线程初始化新的 connectionId %s \n", con.ConnectId)
 
 		// 将当前新的连接放入新的local变量中
 		context.Push()
-		SetDbConnection(context, con) //连接不用释放 close方法没用
+		db.SetDbConnection(context, con) //连接不用释放 close方法没用
 
 		// 启动事物
 		con.BeginTransaction()
@@ -80,31 +82,32 @@ func (d *TxRequireProxyFilter) Execute(context *context.LocalStack,
 	}
 
 	return d.Next.Execute(context, classInfo, methodInfo, invoker, arg)
+
 }
 
-func (d *TxRequireProxyFilter) SetNext(next proxy.ProxyFilter) {
+func (d *TxReadOnlyProxyFilter) SetNext(next proxy.ProxyFilter) {
 	d.Next = next
 }
 
-func (d *TxRequireProxyFilter) Order() int {
-	return 5
+func (d *TxReadOnlyProxyFilter) Order() int {
+	return 3
 }
 
-var txRequireProxyFilter TxRequireProxyFilter = TxRequireProxyFilter{}
+var txReadOnlyProxyFilter TxReadOnlyProxyFilter = TxReadOnlyProxyFilter{}
 
-type TxRequireProxyFilterFactory struct {
+type TxReadOnlyProxyFilterFactory struct {
 }
 
-func (d *TxRequireProxyFilterFactory) GetInstance(m map[string]interface{}) proxy.ProxyFilter {
-	return proxy.ProxyFilter(&txRequireProxyFilter)
+func (d *TxReadOnlyProxyFilterFactory) GetInstance(m map[string]interface{}) proxy.ProxyFilter {
+	return proxy.ProxyFilter(&txReadOnlyProxyFilter)
 }
 
-func (d *TxRequireProxyFilterFactory) AnnotationMatch() []string {
-	return []string{TransactionRequire}
+func (d *TxReadOnlyProxyFilterFactory) AnnotationMatch() []string {
+	return []string{db.TransactionReadOnly}
 }
 
-var txRequireProxyFilterFactory TxRequireProxyFilterFactory = TxRequireProxyFilterFactory{}
+var txReadOnlyProxyFilterFactory TxReadOnlyProxyFilterFactory = TxReadOnlyProxyFilterFactory{}
 
 func init() {
-	proxy.AddProxyFilterFactory(proxy.ProxyFilterFactory(&txRequireProxyFilterFactory))
+	proxy.AddProxyFilterFactory(proxy.ProxyFilterFactory(&txReadOnlyProxyFilterFactory))
 }
