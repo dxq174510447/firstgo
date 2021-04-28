@@ -2,7 +2,7 @@ package dao
 
 import (
 	"firstgo/frame/context"
-	"firstgo/frame/db"
+	"firstgo/frame/db/dbcore"
 	"firstgo/frame/proxy"
 	"firstgo/povo/po"
 	"firstgo/povo/vo"
@@ -10,6 +10,7 @@ import (
 
 type UsersDao struct {
 	Proxy_               *proxy.ProxyClass
+	Save123_             func(local *context.LocalStack, data *po.Users, self *UsersDao) (int, error)
 	Save_                func(local *context.LocalStack, data *po.Users, self *UsersDao) int
 	Update_              func(local *context.LocalStack, data *po.Users, self *UsersDao) int
 	Delete_              func(local *context.LocalStack, id int, self *UsersDao) int
@@ -22,6 +23,10 @@ type UsersDao struct {
 
 func (c *UsersDao) Save(local *context.LocalStack, data *po.Users) int {
 	return c.Save_(local, data, c)
+}
+
+func (c *UsersDao) Save123(local *context.LocalStack, data *po.Users) (int, error) {
+	return c.Save123_(local, data, c)
 }
 
 func (c *UsersDao) Update(local *context.LocalStack, data *po.Users) int {
@@ -61,7 +66,7 @@ var usersDao UsersDao = UsersDao{
 		Annotations: proxy.NewSingleAnnotation(proxy.AnnotationDao, nil),
 	},
 	Save_: func(local *context.LocalStack, data *po.Users, self *UsersDao) int {
-		con := local.Get(db.DataBaseConnectKey).(*db.DatabaseConnection)
+		con := local.Get(dbcore.DataBaseConnectKey).(*dbcore.DatabaseConnection)
 
 		stmt, err := con.Con.PrepareContext(con.Ctx, "insert into users(name,password,status) values (?,?,?)")
 		if err != nil {
@@ -78,7 +83,7 @@ var usersDao UsersDao = UsersDao{
 		return int(affect)
 	},
 	Update_: func(local *context.LocalStack, data *po.Users, self *UsersDao) int {
-		con := local.Get(db.DataBaseConnectKey).(*db.DatabaseConnection)
+		con := local.Get(dbcore.DataBaseConnectKey).(*dbcore.DatabaseConnection)
 
 		stmt, err := con.Con.PrepareContext(con.Ctx, "update users set name=?,password=?,status=? where id=?")
 		if err != nil {
@@ -93,7 +98,7 @@ var usersDao UsersDao = UsersDao{
 		return int(affect)
 	},
 	Delete_: func(local *context.LocalStack, id int, self *UsersDao) int {
-		con := local.Get(db.DataBaseConnectKey).(*db.DatabaseConnection)
+		con := local.Get(dbcore.DataBaseConnectKey).(*dbcore.DatabaseConnection)
 
 		stmt, err := con.Con.PrepareContext(con.Ctx, "delete from users  where id=?")
 		if err != nil {
@@ -108,7 +113,7 @@ var usersDao UsersDao = UsersDao{
 		return int(affect)
 	},
 	Get_: func(local *context.LocalStack, id int, self *UsersDao) *vo.UsersVo {
-		con := local.Get(db.DataBaseConnectKey).(*db.DatabaseConnection)
+		con := local.Get(dbcore.DataBaseConnectKey).(*dbcore.DatabaseConnection)
 
 		stmt, err := con.Con.PrepareContext(con.Ctx, "select id,name,status from users where id=?")
 		if err != nil {
@@ -124,7 +129,7 @@ var usersDao UsersDao = UsersDao{
 		return &data
 	},
 	ChangeStatus_: func(local *context.LocalStack, id int, status int, self *UsersDao) int {
-		con := local.Get(db.DataBaseConnectKey).(*db.DatabaseConnection)
+		con := local.Get(dbcore.DataBaseConnectKey).(*dbcore.DatabaseConnection)
 
 		stmt, err := con.Con.PrepareContext(con.Ctx, "update users set status=? where id=?")
 		if err != nil {
@@ -139,7 +144,7 @@ var usersDao UsersDao = UsersDao{
 		return int(affect)
 	},
 	List_: func(local *context.LocalStack, param *vo.UsersParam, self *UsersDao) *vo.UsersPage {
-		con := local.Get(db.DataBaseConnectKey).(*db.DatabaseConnection)
+		con := local.Get(dbcore.DataBaseConnectKey).(*dbcore.DatabaseConnection)
 		var pageSize int = 10
 		if param.PageSize > 0 {
 			pageSize = param.PageSize
@@ -195,7 +200,7 @@ var usersDao UsersDao = UsersDao{
 		return &vo.UsersPage{Total: totalRow, Data: dd}
 	},
 	FindByNameExcludeId_: func(local *context.LocalStack, name string, id int, self *UsersDao) int {
-		con := local.Get(db.DataBaseConnectKey).(*db.DatabaseConnection)
+		con := local.Get(dbcore.DataBaseConnectKey).(*dbcore.DatabaseConnection)
 
 		stmt2, err2 := con.Con.PrepareContext(con.Ctx, "select count(id) from  users where name = ? and id != ? ")
 		if err2 != nil {
@@ -211,7 +216,7 @@ var usersDao UsersDao = UsersDao{
 		return totalRow
 	},
 	FindByName_: func(local *context.LocalStack, name string, self *UsersDao) int {
-		con := local.Get(db.DataBaseConnectKey).(*db.DatabaseConnection)
+		con := local.Get(dbcore.DataBaseConnectKey).(*dbcore.DatabaseConnection)
 
 		stmt2, err2 := con.Con.PrepareContext(con.Ctx, "select count(id) from  users where name = ? ")
 		if err2 != nil {
@@ -233,5 +238,5 @@ func GetUsersDao() *UsersDao {
 }
 
 func init() {
-	proxy.AddClassProxy(proxy.ProxyTarger(&usersDao))
+	dbcore.AddMapperProxyTarget(proxy.ProxyTarger(&usersDao), UsersXml)
 }

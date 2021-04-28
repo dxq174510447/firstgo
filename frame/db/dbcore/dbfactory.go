@@ -1,9 +1,8 @@
-package db
+package dbcore
 
 import (
 	"context"
 	"database/sql"
-	_ "firstgo/frame/db/filter"
 	"firstgo/util"
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"

@@ -2,7 +2,7 @@ package filter
 
 import (
 	"firstgo/frame/context"
-	"firstgo/frame/db"
+	"firstgo/frame/db/dbcore"
 	"firstgo/frame/proxy"
 	"fmt"
 	"reflect"
@@ -21,18 +21,18 @@ func (d *DaoConnectProxyFilter) Execute(context *context.LocalStack,
 	fmt.Printf("DaoConnectProxyFilter begin \n")
 	defer fmt.Printf("DaoConnectProxyFilter end \n")
 
-	dbcon := db.GetDbConnection(context)
+	dbcon := dbcore.GetDbConnection(context)
 
 	if dbcon != nil {
 		fmt.Printf("当前线程检测到dbconn connectid %s \n", dbcon.ConnectId)
 	}
 
 	if dbcon == nil {
-		con := db.OpenSqlConnection(0)
+		con := dbcore.OpenSqlConnection(0)
 		fmt.Printf("当前线程未检测到dbconn 初始化之后 connectid %s \n", con.ConnectId)
 
 		context.Push()
-		db.SetDbConnection(context, con) //连接不用释放 close方法没用
+		dbcore.SetDbConnection(context, con) //连接不用释放 close方法没用
 
 		defer func() {
 			con.Close()

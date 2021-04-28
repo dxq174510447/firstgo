@@ -1,4 +1,4 @@
-package controller
+package v1
 
 import (
 	"firstgo/frame/context"
@@ -7,14 +7,14 @@ import (
 	vo2 "firstgo/frame/vo"
 	"firstgo/povo/po"
 	"firstgo/povo/vo"
-	"firstgo/service"
+	"firstgo/service/impl"
 	"firstgo/util"
 	"fmt"
 )
 
 // UsersController 不要直接初始化 首字母大写代表类
 type UsersController struct {
-	usersService  *service.UsersService
+	usersService  *impl.UsersService
 	Proxy_        *proxy.ProxyClass
 	Save_         func(local *context.LocalStack, param *vo.UsersAdd, self *UsersController) *vo.UsersVo
 	Update_       func(local *context.LocalStack, param *vo.UsersEdit, self *UsersController) *vo.UsersVo
@@ -67,7 +67,7 @@ func (c *UsersController) ProxyTarget() *proxy.ProxyClass {
 // UsersControllerImpl 控制器单例
 var userController UsersController = UsersController{
 	Proxy_: &proxy.ProxyClass{
-		Annotations: http.NewRestAnnotation("/users", "", "", ""),
+		Annotations: http.NewRestAnnotation("/v1/users", "", "", ""),
 		Methods: []*proxy.ProxyMethod{
 			&proxy.ProxyMethod{
 				Name:        "Save",
@@ -142,6 +142,6 @@ func init() {
 
 	http.AddControllerProxyTarget(proxy.ProxyTarger(&userController))
 	// 初始化
-	userController.usersService = service.GetUsersService()
+	userController.usersService = impl.GetUsersService()
 
 }

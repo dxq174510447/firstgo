@@ -2,7 +2,7 @@ package filter
 
 import (
 	"firstgo/frame/context"
-	"firstgo/frame/db"
+	"firstgo/frame/db/dbcore"
 	"firstgo/frame/proxy"
 	"fmt"
 	"reflect"
@@ -22,7 +22,7 @@ func (d *TxReadOnlyProxyFilter) Execute(context *context.LocalStack,
 	fmt.Printf("TxReadOnlyProxyFilter begin \n")
 	defer fmt.Printf("TxReadOnlyProxyFilter end \n")
 
-	dbcon := db.GetDbConnection(context)
+	dbcon := dbcore.GetDbConnection(context)
 
 	addNewConnection := false
 
@@ -36,12 +36,12 @@ func (d *TxReadOnlyProxyFilter) Execute(context *context.LocalStack,
 
 	if addNewConnection {
 		// 开启新的连接
-		con := db.OpenSqlConnection(1)
+		con := dbcore.OpenSqlConnection(1)
 		fmt.Printf("当前线程初始化新的 connectionId %s \n", con.ConnectId)
 
 		// 将当前新的连接放入新的local变量中
 		context.Push()
-		db.SetDbConnection(context, con) //连接不用释放 close方法没用
+		dbcore.SetDbConnection(context, con) //连接不用释放 close方法没用
 
 		// 启动事物
 		con.BeginTransaction()
@@ -103,7 +103,7 @@ func (d *TxReadOnlyProxyFilterFactory) GetInstance(m map[string]interface{}) pro
 }
 
 func (d *TxReadOnlyProxyFilterFactory) AnnotationMatch() []string {
-	return []string{db.TransactionReadOnly}
+	return []string{dbcore.TransactionReadOnly}
 }
 
 var txReadOnlyProxyFilterFactory TxReadOnlyProxyFilterFactory = TxReadOnlyProxyFilterFactory{}

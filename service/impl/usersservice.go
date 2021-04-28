@@ -1,9 +1,9 @@
-package service
+package impl
 
 import (
 	"firstgo/dao"
 	"firstgo/frame/context"
-	"firstgo/frame/db"
+	"firstgo/frame/db/dbcore"
 	"firstgo/frame/exception"
 	"firstgo/frame/proxy"
 	"firstgo/povo/po"
@@ -54,19 +54,19 @@ var usersService UsersService = UsersService{
 		Methods: []*proxy.ProxyMethod{
 			&proxy.ProxyMethod{
 				Name:        "Save",
-				Annotations: proxy.NewSingleAnnotation(db.TransactionRequire, nil),
+				Annotations: proxy.NewSingleAnnotation(dbcore.TransactionRequire, nil),
 			},
 			&proxy.ProxyMethod{
 				Name:        "Update",
-				Annotations: proxy.NewSingleAnnotation(db.TransactionRequire, nil),
+				Annotations: proxy.NewSingleAnnotation(dbcore.TransactionRequire, nil),
 			},
 			&proxy.ProxyMethod{
 				Name:        "Delete",
-				Annotations: proxy.NewSingleAnnotation(db.TransactionRequire, nil),
+				Annotations: proxy.NewSingleAnnotation(dbcore.TransactionRequire, nil),
 			},
 			&proxy.ProxyMethod{
 				Name:        "ChangeStatus",
-				Annotations: proxy.NewSingleAnnotation(db.TransactionRequire, nil),
+				Annotations: proxy.NewSingleAnnotation(dbcore.TransactionRequire, nil),
 			},
 		},
 	},
