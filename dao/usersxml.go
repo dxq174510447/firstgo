@@ -9,6 +9,7 @@ const UsersXml = `
 			(
 				select a.* from BASE_ROLE a,BASE_USER_ROLE b
 				where a.ID_ = b.ROLE_ID_
+	<include refid="pageImport"></include>
 				<if test="id!=null and id != ''">
 				AND b.USER_ID_ = #{id}
 				</if>
@@ -17,6 +18,7 @@ const UsersXml = `
 				where a.ID_ = b.ROLE_ID_ and b.POSITION_ID_ = c.POSITION_ID_ 
 				<if test="id!=null and id != ''">
 					and c.USER_ID_ = #{id}
+<include refid="pageImport1"></include>
 				</if>
 			) r
 	</select>

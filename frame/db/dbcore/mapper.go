@@ -6,6 +6,7 @@ import (
 	"firstgo/frame/proxy"
 	"fmt"
 	"reflect"
+	"regexp"
 	"strings"
 )
 
@@ -72,8 +73,6 @@ func (m *MapperFactory) ParseXml(target proxy.ProxyTarger, content string) map[s
 			refs[ele.Id] = &ele
 		}
 	}
-	fmt.Println(refs)
-
 	return refs
 }
 
@@ -106,9 +105,17 @@ func (s *sqlInvoke) invoke(context *context.LocalStack, args []reflect.Value) []
 	return nil
 }
 
+// 必须返回两个值  一个sql返回的 一个error
 func (s *sqlInvoke) invokeSelect(context *context.LocalStack, args []reflect.Value, sql *MapperElementXml) []reflect.Value {
-	fmt.Println(sql.Id, sql.Sql)
-	return nil
+	var dberr *DaoException = nil
+
+	re := regexp.MustCompile(`<include refid="(\S+)">\s*</include>`)
+	ns := re.ReplaceAllStringFunc(sql.Sql, func(s string) string {
+		fmt.Println(s)
+		return ""
+	})
+	fmt.Println(ns)
+	return []reflect.Value{reflect.ValueOf(1), reflect.ValueOf(dberr)}
 }
 
 func (s *sqlInvoke) invokeUpdate(context *context.LocalStack, args []reflect.Value, sql *MapperElementXml) []reflect.Value {
