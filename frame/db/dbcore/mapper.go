@@ -17,23 +17,36 @@ type MapperElementXml struct {
 }
 
 type MapperXml struct {
-	Sql []MapperElementXml `xml:"sql"`
+	Sql []*MapperElementXml `xml:"sql"`
 
-	SelectSql []MapperElementXml `xml:"select"`
+	SelectSql []*MapperElementXml `xml:"select"`
 
-	UpdateSql []MapperElementXml `xml:"update"`
+	UpdateSql []*MapperElementXml `xml:"update"`
 
-	DeleteSql []MapperElementXml `xml:"delete"`
+	DeleteSql []*MapperElementXml `xml:"delete"`
 
-	InsertSql []MapperElementXml `xml:"insert"`
+	InsertSql []*MapperElementXml `xml:"insert"`
 }
 
 type MapperFactory struct {
+	importTagRegexp *regexp.Regexp
+}
+
+func (m *MapperFactory) ReplaceImportTag(sql string, refs map[string]*MapperElementXml) string {
+	ns := m.importTagRegexp.ReplaceAllStringFunc(sql, func(str string) string {
+		str1 := m.importTagRegexp.FindStringSubmatch(str)
+		if s, ok := refs[str1[1]]; ok {
+			return s.Sql
+		}
+		return ""
+	})
+	return ns
 }
 
 func (m *MapperFactory) ParseXml(target proxy.ProxyTarger, content string) map[string]*MapperElementXml {
 	mapper := &MapperXml{}
 	err := xml.Unmarshal([]byte(content), mapper)
+
 	if err != nil {
 		panic(err)
 	}
@@ -42,41 +55,48 @@ func (m *MapperFactory) ParseXml(target proxy.ProxyTarger, content string) map[s
 	if len(mapper.Sql) > 0 {
 		for _, ele := range mapper.Sql {
 			ele.SqlType = SqlTypeSql
-			refs[ele.Id] = &ele
+			refs[ele.Id] = ele
 		}
 	}
 
 	if len(mapper.UpdateSql) > 0 {
 		for _, ele := range mapper.UpdateSql {
 			ele.SqlType = SqlTypeUpdate
-			refs[ele.Id] = &ele
+			ele.Sql = m.ReplaceImportTag(ele.Sql, refs)
+			refs[ele.Id] = ele
 		}
 	}
 
 	if len(mapper.InsertSql) > 0 {
 		for _, ele := range mapper.InsertSql {
 			ele.SqlType = SqlTypeInsert
-			refs[ele.Id] = &ele
+			ele.Sql = m.ReplaceImportTag(ele.Sql, refs)
+			refs[ele.Id] = ele
 		}
 	}
 
 	if len(mapper.SelectSql) > 0 {
 		for _, ele := range mapper.SelectSql {
 			ele.SqlType = SqlTypeSelect
-			refs[ele.Id] = &ele
+			ele.Sql = m.ReplaceImportTag(ele.Sql, refs)
+			refs[ele.Id] = ele
 		}
 	}
 
 	if len(mapper.DeleteSql) > 0 {
 		for _, ele := range mapper.DeleteSql {
 			ele.SqlType = SqlTypeDelete
-			refs[ele.Id] = &ele
+			ele.Sql = m.ReplaceImportTag(ele.Sql, refs)
+			refs[ele.Id] = ele
 		}
 	}
+
 	return refs
 }
 
-var mapperFactory MapperFactory = MapperFactory{}
+var mapperFactory MapperFactory = MapperFactory{
+	importTagRegexp: regexp.MustCompile(`<include refid="(\S+)">\s*</include>`),
+}
 
 func GetMapperFactory() *MapperFactory {
 	return &mapperFactory
@@ -110,8 +130,11 @@ func (s *sqlInvoke) invokeSelect(context *context.LocalStack, args []reflect.Val
 	var dberr *DaoException = nil
 
 	re := regexp.MustCompile(`<include refid="(\S+)">\s*</include>`)
-	ns := re.ReplaceAllStringFunc(sql.Sql, func(s string) string {
-		fmt.Println(s)
+	ns := re.ReplaceAllStringFunc(sql.Sql, func(str string) string {
+		str1 := re.FindStringSubmatch(str)
+		if s, ok := s.mapper[str1[1]]; ok {
+			return s.Sql
+		}
 		return ""
 	})
 	fmt.Println(ns)
