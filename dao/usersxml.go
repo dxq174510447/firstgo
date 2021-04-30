@@ -18,7 +18,7 @@ const UsersXml = `
 				where a.ID_ = b.ROLE_ID_ and b.POSITION_ID_ = c.POSITION_ID_ 
 				<if test="id!=null and id != ''">
 					and c.USER_ID_ = #{id}
-<include refid="pageImport1"></include>
+<include refid="pageImport"></include>
 				</if>
 			) r
 	</select>

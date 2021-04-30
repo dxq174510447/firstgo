@@ -1,19 +1,27 @@
 package dbcore
 
 import (
+	"bytes"
 	"encoding/xml"
 	"firstgo/frame/context"
 	"firstgo/frame/proxy"
 	"fmt"
+	"io"
 	"reflect"
 	"regexp"
 	"strings"
+	"text/template"
 )
+
+type SqlProviderConfig struct {
+	Param string
+}
 
 type MapperElementXml struct {
 	Id      string `xml:"id,attr"`
 	Sql     string `xml:",innerxml"`
 	SqlType string
+	Tpl     *template.Template
 }
 
 type MapperXml struct {
@@ -63,6 +71,7 @@ func (m *MapperFactory) ParseXml(target proxy.ProxyTarger, content string) map[s
 		for _, ele := range mapper.UpdateSql {
 			ele.SqlType = SqlTypeUpdate
 			ele.Sql = m.ReplaceImportTag(ele.Sql, refs)
+			ele.Tpl = template.Must(template.New(fmt.Sprintf("%s-%s", proxy.GetClassName(target), ele.Id)).Parse(ele.Sql))
 			refs[ele.Id] = ele
 		}
 	}
@@ -71,6 +80,7 @@ func (m *MapperFactory) ParseXml(target proxy.ProxyTarger, content string) map[s
 		for _, ele := range mapper.InsertSql {
 			ele.SqlType = SqlTypeInsert
 			ele.Sql = m.ReplaceImportTag(ele.Sql, refs)
+			ele.Tpl = template.Must(template.New(fmt.Sprintf("%s-%s", proxy.GetClassName(target), ele.Id)).Parse(ele.Sql))
 			refs[ele.Id] = ele
 		}
 	}
@@ -79,6 +89,7 @@ func (m *MapperFactory) ParseXml(target proxy.ProxyTarger, content string) map[s
 		for _, ele := range mapper.SelectSql {
 			ele.SqlType = SqlTypeSelect
 			ele.Sql = m.ReplaceImportTag(ele.Sql, refs)
+			ele.Tpl = template.Must(template.New(fmt.Sprintf("%s-%s", proxy.GetClassName(target), ele.Id)).Parse(ele.Sql))
 			refs[ele.Id] = ele
 		}
 	}
@@ -87,6 +98,7 @@ func (m *MapperFactory) ParseXml(target proxy.ProxyTarger, content string) map[s
 		for _, ele := range mapper.DeleteSql {
 			ele.SqlType = SqlTypeDelete
 			ele.Sql = m.ReplaceImportTag(ele.Sql, refs)
+			ele.Tpl = template.Must(template.New(fmt.Sprintf("%s-%s", proxy.GetClassName(target), ele.Id)).Parse(ele.Sql))
 			refs[ele.Id] = ele
 		}
 	}
@@ -103,10 +115,11 @@ func GetMapperFactory() *MapperFactory {
 }
 
 type sqlInvoke struct {
-	target interface{}
-	clazz  *proxy.ProxyClass
-	method *proxy.ProxyMethod
-	mapper map[string]*MapperElementXml
+	target         interface{}
+	clazz          *proxy.ProxyClass
+	method         *proxy.ProxyMethod
+	mapper         map[string]*MapperElementXml
+	providerConfig *SqlProviderConfig
 }
 
 func (s *sqlInvoke) invoke(context *context.LocalStack, args []reflect.Value) []reflect.Value {
@@ -125,19 +138,36 @@ func (s *sqlInvoke) invoke(context *context.LocalStack, args []reflect.Value) []
 	return nil
 }
 
+func (s *sqlInvoke) getSqlFromTpl(context *context.LocalStack, args []reflect.Value, sql *MapperElementXml) (string, error) {
+	// 去除局部变量参数
+	if len(args) <= 1 {
+		return sql.Sql, nil
+	}
+	// 只有一个参数 结构体 基础类型 string
+	var params []string
+	if s.providerConfig != nil && s.providerConfig.Param != "" {
+		params = strings.Split(s.providerConfig.Param, ",")
+	}
+
+	var result string
+	if len(args) == 2 {
+		if len(params) >= 2 && params[1] != "_" && params[1] != "" {
+
+		} else {
+			buf := &bytes.Buffer{}
+			sql.Tpl.Execute(buf, args[1].Interface())
+			return buf.String(), nil
+		}
+	}
+
+}
+
 // 必须返回两个值  一个sql返回的 一个error
-func (s *sqlInvoke) invokeSelect(context *context.LocalStack, args []reflect.Value, sql *MapperElementXml) []reflect.Value {
+func (s *sqlInvoke) invokeSelect(context *context.LocalStack, args []reflect.Value, sqlEle *MapperElementXml) []reflect.Value {
 	var dberr *DaoException = nil
 
-	re := regexp.MustCompile(`<include refid="(\S+)">\s*</include>`)
-	ns := re.ReplaceAllStringFunc(sql.Sql, func(str string) string {
-		str1 := re.FindStringSubmatch(str)
-		if s, ok := s.mapper[str1[1]]; ok {
-			return s.Sql
-		}
-		return ""
-	})
-	fmt.Println(ns)
+	sql := s.getSqlFromTpl(context, args, sqlEle)
+
 	return []reflect.Value{reflect.ValueOf(1), reflect.ValueOf(dberr)}
 }
 
@@ -156,12 +186,15 @@ func (s *sqlInvoke) invokeInsert(context *context.LocalStack, args []reflect.Val
 func newSqlInvoke(
 	target interface{},
 	clazz *proxy.ProxyClass,
-	method *proxy.ProxyMethod, mapper map[string]*MapperElementXml) *sqlInvoke {
+	method *proxy.ProxyMethod,
+	mapper map[string]*MapperElementXml,
+	providerConfig *SqlProviderConfig) *sqlInvoke {
 	return &sqlInvoke{
-		target: target,
-		clazz:  clazz,
-		method: method,
-		mapper: mapper,
+		target:         target,
+		clazz:          clazz,
+		method:         method,
+		mapper:         mapper,
+		providerConfig: providerConfig,
 	}
 }
 
@@ -192,7 +225,18 @@ func AddMapperProxyTarget(target1 proxy.ProxyTarger, xml string) {
 					methodSetting = &proxy.ProxyMethod{Name: methodName}
 				}
 
-				invoker := newSqlInvoke(target1, target1.ProxyTarget(), methodSetting, xmlele)
+				var providerConfig *SqlProviderConfig = nil
+				if methodSetting != nil && len(methodSetting.Annotations) > 0 {
+					for _, anno := range methodSetting.Annotations {
+						if anno.Name == AnnotationSqlProviderConfig {
+							if provider, f := anno.Value[AnnotationSqlProviderConfigValueKey]; f {
+								providerConfig = provider.(*SqlProviderConfig)
+							}
+						}
+					}
+				}
+
+				invoker := newSqlInvoke(target1, target1.ProxyTarget(), methodSetting, xmlele, providerConfig)
 				proxyCall := func(command *sqlInvoke) reflect.Value {
 					newCall := reflect.MakeFunc(field.Type, func(in []reflect.Value) []reflect.Value {
 						return command.invoke(in[0].Interface().(*context.LocalStack), in)
@@ -205,4 +249,17 @@ func AddMapperProxyTarget(target1 proxy.ProxyTarger, xml string) {
 	}
 
 	proxy.AddClassProxy(target1)
+}
+
+func NewSqlProvierConfigAnnotation(param string) []*proxy.AnnotationClass {
+	return []*proxy.AnnotationClass{
+		&proxy.AnnotationClass{
+			Name: AnnotationSqlProviderConfig,
+			Value: map[string]interface{}{
+				AnnotationSqlProviderConfigValueKey: &SqlProviderConfig{
+					Param: param,
+				},
+			},
+		},
+	}
 }
