@@ -17,9 +17,12 @@ const (
 	//DataBaseDefaultKey db 路由 默认key
 	DataBaseDefaultKey = "default"
 
-	//上下文中保存的数据库连接
+	// DataBaseConnectKey 上下文中保存的数据库连接
 	DataBaseConnectKey = "DataBaseConnectKey_"
-	DataBaseTxKey      = "DataBaseTxKey_"
+
+	// MapperErrorHandlerFlagKey 上下文中保存mapper错误处理方式 0panic 1 return error
+	MapperErrorHandlerFlagKey = "MapperErrorHandlerFlagKey_"
+	DataBaseTxKey             = "DataBaseTxKey_"
 )
 
 const (
@@ -43,4 +46,18 @@ func GetDbConnection(local *context.LocalStack) *DatabaseConnection {
 		return nil
 	}
 	return db.(*DatabaseConnection)
+}
+
+// GetErrorHandleFlag flag 0 标记panic 1标记 return error
+func GetErrorHandleFlag(local *context.LocalStack) int {
+	flag := local.Get(MapperErrorHandlerFlagKey)
+	if flag == nil {
+		return 0
+	}
+	return flag.(int)
+}
+
+// SetErrorHandleFlag flag 0 标记panic 1标记 return error
+func SetErrorHandleFlag(local *context.LocalStack, flag int) {
+	local.Set(MapperErrorHandlerFlagKey, flag)
 }

@@ -6,7 +6,6 @@ import (
 	"firstgo/frame/context"
 	"firstgo/frame/proxy"
 	"fmt"
-	"io"
 	"reflect"
 	"regexp"
 	"strings"
@@ -139,36 +138,111 @@ func (s *sqlInvoke) invoke(context *context.LocalStack, args []reflect.Value) []
 }
 
 func (s *sqlInvoke) getSqlFromTpl(context *context.LocalStack, args []reflect.Value, sql *MapperElementXml) (string, error) {
+
 	// 去除局部变量参数
 	if len(args) <= 1 {
 		return sql.Sql, nil
 	}
+
 	// 只有一个参数 结构体 基础类型 string
 	var params []string
 	if s.providerConfig != nil && s.providerConfig.Param != "" {
 		params = strings.Split(s.providerConfig.Param, ",")
 	}
-
-	var result string
 	if len(args) == 2 {
 		if len(params) >= 2 && params[1] != "_" && params[1] != "" {
-
+			root := make(map[string]interface{})
+			root[params[1]] = args[1].Interface()
+			buf := &bytes.Buffer{}
+			err := sql.Tpl.Execute(buf, root)
+			if err != nil {
+				return "", err
+			}
+			return buf.String(), nil
 		} else {
 			buf := &bytes.Buffer{}
-			sql.Tpl.Execute(buf, args[1].Interface())
+			err := sql.Tpl.Execute(buf, args[1].Interface())
+			if err != nil {
+				return "", err
+			}
 			return buf.String(), nil
 		}
 	}
-
+	// > 2
+	root := make(map[string]interface{})
+	for i := 1; i < len(params); i++ {
+		if params[i] != "_" && params[i] != "" {
+			root[params[i]] = args[i].Interface()
+		}
+	}
+	buf := &bytes.Buffer{}
+	err := sql.Tpl.Execute(buf, root)
+	if err != nil {
+		return "", err
+	}
+	return buf.String(), nil
 }
 
 // 必须返回两个值  一个sql返回的 一个error
-func (s *sqlInvoke) invokeSelect(context *context.LocalStack, args []reflect.Value, sqlEle *MapperElementXml) []reflect.Value {
-	var dberr *DaoException = nil
+// 默认只返回3个类型 slice，单个结构体，int
+func (s *sqlInvoke) invokeSelect(local *context.LocalStack, args []reflect.Value, sqlEle *MapperElementXml) []reflect.Value {
 
-	sql := s.getSqlFromTpl(context, args, sqlEle)
+	var defaultValue reflect.Value = reflect.ValueOf(1)
+	//var defaultError *DaoException = &DaoException{exception.FrameException{Code: 505,Message: "数据库操作错误"}}
+	var nilError error
 
-	return []reflect.Value{reflect.ValueOf(1), reflect.ValueOf(dberr)}
+	errorFlag := GetErrorHandleFlag(local) //0 panic 1 return
+	//con := GetDbConnection(local)
+	//if con == nil {
+	//	var errortip string = "上下文中找不到数据库链接"
+	//	if errorFlag == 0 {
+	//		panic(errortip)
+	//	}else{
+	//		defaultError.Message=errortip
+	//		return []reflect.Value{defaultValue, reflect.ValueOf(defaultError)}
+	//	}
+	//}
+
+	sql, err1 := s.getSqlFromTpl(local, args, sqlEle)
+	if err1 != nil {
+		if errorFlag == 0 {
+			panic(err1)
+		} else {
+			return []reflect.Value{defaultValue, reflect.ValueOf(err1)}
+		}
+	}
+
+	sqlParam, err2 := s.getArgumentsFromSql(local, args, sql)
+	if err2 != nil {
+		if errorFlag == 0 {
+			panic(err2)
+		} else {
+			return []reflect.Value{defaultValue, reflect.ValueOf(err2)}
+		}
+	}
+	fmt.Println(sql)
+	fmt.Println(sqlParam)
+	//stmt, err := con.Con.PrepareContext(con.Ctx, sql)
+	//if err != nil {
+	//	if errorFlag == 0 {
+	//		panic(err)
+	//	}else{
+	//		return []reflect.Value{defaultValue, reflect.ValueOf(err)}
+	//	}
+	//}
+	//defer stmt.Close()
+	//
+	//
+	//result := stmt.QueryRow(sqlParam...)
+
+	//data := vo.UsersVo{}
+	//if err := result.Scan(&data.Id, &data.Name, &data.Status); err != nil {
+	//	return nil
+	//}
+	//return &data
+	//
+	//return []reflect.Value{reflect.ValueOf(1), reflect.ValueOf(dberr)}
+	return []reflect.Value{defaultValue, reflect.ValueOf(nilError)}
 }
 
 func (s *sqlInvoke) invokeUpdate(context *context.LocalStack, args []reflect.Value, sql *MapperElementXml) []reflect.Value {
@@ -181,6 +255,48 @@ func (s *sqlInvoke) invokeDelete(context *context.LocalStack, args []reflect.Val
 
 func (s *sqlInvoke) invokeInsert(context *context.LocalStack, args []reflect.Value, sql *MapperElementXml) []reflect.Value {
 	return nil
+}
+
+func (s *sqlInvoke) getArgumentsFromSql(local *context.LocalStack, args []reflect.Value, sql string) ([]interface{}, error) {
+	// 去除局部变量参数
+	if len(args) <= 1 {
+		return nil, nil
+	}
+
+	// 只有一个参数 结构体 基础类型 string
+	var params []string
+	if s.providerConfig != nil && s.providerConfig.Param != "" {
+		params = strings.Split(s.providerConfig.Param, ",")
+	}
+	var root interface{}
+	if len(args) == 2 {
+		if len(params) >= 2 && params[1] != "_" && params[1] != "" {
+			root1 := make(map[string]interface{})
+			root1[params[1]] = args[1].Interface()
+			root = root1
+		} else {
+			root = args[1].Interface()
+		}
+	} else {
+		root1 := make(map[string]interface{})
+		for i := 1; i < len(params); i++ {
+			if params[i] != "_" && params[i] != "" {
+				root1[params[i]] = args[i].Interface()
+			}
+		}
+		root = root1
+	}
+
+	variables := parseAndGetSqlVariables(sql)
+	if len(variables) == 0 {
+		return nil, nil
+	}
+	var result []interface{}
+	for _, v := range variables {
+		m := proxy.GetVariableValue(root, v)
+		result = append(result, m)
+	}
+	return result, nil
 }
 
 func newSqlInvoke(
@@ -261,5 +377,20 @@ func NewSqlProvierConfigAnnotation(param string) []*proxy.AnnotationClass {
 				},
 			},
 		},
+	}
+}
+
+// parseAndGetSqlVariables #{ada} 获取ada
+func parseAndGetSqlVariables(sql string) []string {
+	reg := regexp.MustCompile(`(?m)#\{(\S+?)\}`)
+	result := reg.FindAllStringSubmatch(sql, -1)
+	if result != nil {
+		var r1 []string
+		for _, k := range result {
+			r1 = append(r1, k[1])
+		}
+		return r1
+	} else {
+		return nil
 	}
 }

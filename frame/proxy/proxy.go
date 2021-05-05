@@ -201,3 +201,41 @@ func NewSingleAnnotation(annotationName string, value map[string]interface{}) []
 		},
 	}
 }
+
+func getTargetValue(target interface{}, name string) interface{} {
+	v := reflect.ValueOf(target)
+	switch v.Kind() {
+	case reflect.String, reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64, reflect.Float32, reflect.Float64:
+		return target
+	case reflect.Map:
+		m := target.(map[string]interface{})
+		return m[name]
+	case reflect.Ptr:
+		if v.Elem().Kind() == reflect.Struct {
+			return v.FieldByName(name).Interface()
+		}
+	}
+	panic(fmt.Sprintf("%s找不到对应属性", name))
+}
+
+// GetVariableValue target 可能map接口 基础类型 指针结构体类型
+func GetVariableValue(target interface{}, name string) interface{} {
+
+	keys := strings.Split(name, ",")
+
+	l := len(keys)
+	if l == 1 {
+		return getTargetValue(target, name)
+	} else {
+		nt := target
+		for i := 0; i < l; i++ {
+			nt = getTargetValue(nt, keys[i])
+			//中间值为nil 就panic
+			if i < (l-1) && reflect.ValueOf(nt).IsZero() {
+				panic(fmt.Sprintf("sql %s is nil value", name))
+			}
+		}
+		return nt
+	}
+
+}

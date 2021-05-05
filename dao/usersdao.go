@@ -10,7 +10,12 @@ import (
 
 type UsersDao struct {
 	Proxy_               *proxy.ProxyClass
-	Save123_             func(local *context.LocalStack, data *po.Users, self *UsersDao) (int, error)
+	Find1_               func(local *context.LocalStack) (int, error)
+	Find2_               func(local *context.LocalStack, status int) (int, error)
+	Find3_               func(local *context.LocalStack, status int, name string) (int, error)
+	Find4_               func(local *context.LocalStack, user *po.Users) (int, error)
+	Find5_               func(local *context.LocalStack, user *po.Users, status int) (int, error)
+	Find6_               func(local *context.LocalStack, user *po.Users, user1 *po.Users) (int, error)
 	Save_                func(local *context.LocalStack, data *po.Users, self *UsersDao) int
 	Update_              func(local *context.LocalStack, data *po.Users, self *UsersDao) int
 	Delete_              func(local *context.LocalStack, id int, self *UsersDao) int
@@ -25,8 +30,23 @@ func (c *UsersDao) Save(local *context.LocalStack, data *po.Users) int {
 	return c.Save_(local, data, c)
 }
 
-func (c *UsersDao) Save123(local *context.LocalStack, data *po.Users) (int, error) {
-	return c.Save123_(local, data, c)
+func (c *UsersDao) Find1(local *context.LocalStack) (int, error) {
+	return c.Find1_(local)
+}
+func (c *UsersDao) Find2(local *context.LocalStack, status int) (int, error) {
+	return c.Find2_(local, status)
+}
+func (c *UsersDao) Find3(local *context.LocalStack, status int, name string) (int, error) {
+	return c.Find3_(local, status, name)
+}
+func (c *UsersDao) Find4(local *context.LocalStack, user *po.Users) (int, error) {
+	return c.Find4_(local, user)
+}
+func (c *UsersDao) Find5(local *context.LocalStack, user *po.Users, status int) (int, error) {
+	return c.Find5_(local, user, status)
+}
+func (c *UsersDao) Find6(local *context.LocalStack, user *po.Users, user1 *po.Users) (int, error) {
+	return c.Find6_(local, user, user1)
 }
 
 func (c *UsersDao) Update(local *context.LocalStack, data *po.Users) int {
@@ -64,6 +84,27 @@ func (c *UsersDao) ProxyTarget() *proxy.ProxyClass {
 var usersDao UsersDao = UsersDao{
 	Proxy_: &proxy.ProxyClass{
 		Annotations: proxy.NewSingleAnnotation(proxy.AnnotationDao, nil),
+		Methods: []*proxy.ProxyMethod{
+			&proxy.ProxyMethod{
+				Name:        "Find2",
+				Annotations: dbcore.NewSqlProvierConfigAnnotation("_,status"),
+			},
+			&proxy.ProxyMethod{
+				Name:        "Find3",
+				Annotations: dbcore.NewSqlProvierConfigAnnotation("_,status,name"),
+			},
+			&proxy.ProxyMethod{
+				Name:        "Find4",
+				Annotations: dbcore.NewSqlProvierConfigAnnotation("_,_"),
+			},
+			&proxy.ProxyMethod{
+				Name:        "Find5",
+				Annotations: dbcore.NewSqlProvierConfigAnnotation("_,user,status"),
+			}, &proxy.ProxyMethod{
+				Name:        "Find6",
+				Annotations: dbcore.NewSqlProvierConfigAnnotation("_,user,user1"),
+			},
+		},
 	},
 	Save_: func(local *context.LocalStack, data *po.Users, self *UsersDao) int {
 		con := local.Get(dbcore.DataBaseConnectKey).(*dbcore.DatabaseConnection)
