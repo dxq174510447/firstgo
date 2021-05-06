@@ -5,7 +5,8 @@ const UsersXml = `
 <?xml version="1.0" encoding="UTF-8" ?>
 <mapper>
 	<select id="Find1">
-			select * from users where status = 1
+			select * from users 
+			where status = 1
 	</select>
 	<select id="Find2">
 			select * from users where  status = #{status}
@@ -20,7 +21,9 @@ const UsersXml = `
 			select * from users where id = #{user.Id} and status = #{user.Status} and status = #{status}
 	</select>
 	<select id="Find6">
-			select * from users where id = #{user.Id} and status = #{user1.Status}
+			select * from users where 
+			id = #{user.Id} 
+ 			and status = #{user1.Status}
 	</select>
 
 </mapper>

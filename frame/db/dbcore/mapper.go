@@ -47,6 +47,8 @@ func (m *MapperFactory) ReplaceImportTag(sql string, refs map[string]*MapperElem
 		}
 		return ""
 	})
+	reg := regexp.MustCompile(`(?m)(^\s+|\s+$)`)
+	ns = reg.ReplaceAllString(ns, " ")
 	return ns
 }
 
