@@ -14,7 +14,7 @@ type UsersDao struct {
 	Find2_               func(local *context.LocalStack, status int) (int, error)
 	Find3_               func(local *context.LocalStack, status int, name string) (int, error)
 	Find4_               func(local *context.LocalStack, user *po.Users) (int, error)
-	Find5_               func(local *context.LocalStack, user *po.Users, status int) (int, error)
+	Find5_               func(local *context.LocalStack, user *po.Users, status int) ([]*po.Users, error)
 	Find6_               func(local *context.LocalStack, user *po.Users, user1 *po.Users) (int, error)
 	Save_                func(local *context.LocalStack, data *po.Users, self *UsersDao) int
 	Update_              func(local *context.LocalStack, data *po.Users, self *UsersDao) int
@@ -42,7 +42,7 @@ func (c *UsersDao) Find3(local *context.LocalStack, status int, name string) (in
 func (c *UsersDao) Find4(local *context.LocalStack, user *po.Users) (int, error) {
 	return c.Find4_(local, user)
 }
-func (c *UsersDao) Find5(local *context.LocalStack, user *po.Users, status int) (int, error) {
+func (c *UsersDao) Find5(local *context.LocalStack, user *po.Users, status int) ([]*po.Users, error) {
 	return c.Find5_(local, user, status)
 }
 func (c *UsersDao) Find6(local *context.LocalStack, user *po.Users, user1 *po.Users) (int, error) {

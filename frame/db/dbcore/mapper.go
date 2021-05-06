@@ -2,9 +2,12 @@ package dbcore
 
 import (
 	"bytes"
+	"database/sql"
 	"encoding/xml"
 	"firstgo/frame/context"
+	"firstgo/frame/exception"
 	"firstgo/frame/proxy"
+	"firstgo/povo/po"
 	"fmt"
 	"reflect"
 	"regexp"
@@ -116,11 +119,13 @@ func GetMapperFactory() *MapperFactory {
 }
 
 type sqlInvoke struct {
-	target         interface{}
-	clazz          *proxy.ProxyClass
-	method         *proxy.ProxyMethod
-	mapper         map[string]*MapperElementXml
-	providerConfig *SqlProviderConfig
+	target             interface{}
+	clazz              *proxy.ProxyClass
+	method             *proxy.ProxyMethod
+	mapper             map[string]*MapperElementXml
+	providerConfig     *SqlProviderConfig
+	returnSqlType      reflect.Type
+	defaultReturnValue *reflect.Value
 }
 
 func (s *sqlInvoke) invoke(context *context.LocalStack, args []reflect.Value) []reflect.Value {
@@ -185,31 +190,37 @@ func (s *sqlInvoke) getSqlFromTpl(context *context.LocalStack, args []reflect.Va
 	return buf.String(), nil
 }
 
-// 必须返回两个值  一个sql返回的 一个error
-// 默认只返回3个类型 slice，单个结构体，int
+// 必须返回1-2个参数，其他一个必须是error并且放在最后一个返回值，至于sql返回有没有都行
+// 默认只返回3种类型 slice，单个结构体，int float64 string
 func (s *sqlInvoke) invokeSelect(local *context.LocalStack, args []reflect.Value, sqlEle *MapperElementXml) []reflect.Value {
-
-	var defaultValue reflect.Value = reflect.ValueOf(1)
-	//var defaultError *DaoException = &DaoException{exception.FrameException{Code: 505,Message: "数据库操作错误"}}
 	var nilError *DaoException
+
 	errorFlag := GetErrorHandleFlag(local) //0 panic 1 return
-	//con := GetDbConnection(local)
-	//if con == nil {
-	//	var errortip string = "上下文中找不到数据库链接"
-	//	if errorFlag == 0 {
-	//		panic(errortip)
-	//	}else{
-	//		defaultError.Message=errortip
-	//		return []reflect.Value{defaultValue, reflect.ValueOf(defaultError)}
-	//	}
-	//}
+	con := GetDbConnection(local)
+	if con == nil {
+		var errortip string = "上下文中找不到数据库链接"
+		if errorFlag == 0 {
+			panic(errortip)
+		} else {
+			var defaultError *DaoException = &DaoException{exception.FrameException{Code: 505, Message: errortip}}
+			if s.returnSqlType != nil {
+				return []reflect.Value{*s.defaultReturnValue, reflect.ValueOf(defaultError)}
+			} else {
+				return []reflect.Value{reflect.ValueOf(defaultError)}
+			}
+		}
+	}
 
 	sql, err1 := s.getSqlFromTpl(local, args, sqlEle)
 	if err1 != nil {
 		if errorFlag == 0 {
 			panic(err1)
 		} else {
-			return []reflect.Value{defaultValue, reflect.ValueOf(err1)}
+			if s.returnSqlType != nil {
+				return []reflect.Value{*s.defaultReturnValue, reflect.ValueOf(err1)}
+			} else {
+				return []reflect.Value{reflect.ValueOf(err1)}
+			}
 		}
 	}
 
@@ -218,7 +229,11 @@ func (s *sqlInvoke) invokeSelect(local *context.LocalStack, args []reflect.Value
 		if errorFlag == 0 {
 			panic(err2)
 		} else {
-			return []reflect.Value{defaultValue, reflect.ValueOf(err2)}
+			if s.returnSqlType != nil {
+				return []reflect.Value{*s.defaultReturnValue, reflect.ValueOf(err2)}
+			} else {
+				return []reflect.Value{reflect.ValueOf(err2)}
+			}
 		}
 	}
 	if newsql != "" {
@@ -226,18 +241,43 @@ func (s *sqlInvoke) invokeSelect(local *context.LocalStack, args []reflect.Value
 	}
 	fmt.Printf("Sql[%s]: %s \n", sqlEle.Id, sql)
 	fmt.Printf("Paramters[%s]: %s \n", sqlEle.Id, sqlParam)
-	//stmt, err := con.Con.PrepareContext(con.Ctx, sql)
-	//if err != nil {
-	//	if errorFlag == 0 {
-	//		panic(err)
-	//	}else{
-	//		return []reflect.Value{defaultValue, reflect.ValueOf(err)}
-	//	}
-	//}
-	//defer stmt.Close()
-	//
-	//
-	//result := stmt.QueryRow(sqlParam...)
+	stmt, err := con.Con.PrepareContext(con.Ctx, sql)
+	if err != nil {
+		if errorFlag == 0 {
+			panic(err)
+		} else {
+			if s.returnSqlType != nil {
+				return []reflect.Value{*s.defaultReturnValue, reflect.ValueOf(err)}
+			} else {
+				return []reflect.Value{reflect.ValueOf(err)}
+			}
+		}
+	}
+	defer stmt.Close()
+
+	var queryResult *reflect.Value
+	var queryError error
+	switch s.returnSqlType.Kind() {
+	case reflect.Slice:
+		queryResult, queryError = s.selectList(stmt, sqlParam, errorFlag)
+	case reflect.Ptr:
+		//queryResult,queryError = s.selectRow(stmt,sqlParam,errorFlag)
+		fmt.Println("1")
+	default:
+		fmt.Println("2")
+	}
+
+	if queryError != nil {
+		if errorFlag == 0 {
+			panic(queryError)
+		} else {
+			if s.returnSqlType != nil {
+				return []reflect.Value{*s.defaultReturnValue, reflect.ValueOf(queryError)}
+			} else {
+				return []reflect.Value{reflect.ValueOf(queryError)}
+			}
+		}
+	}
 
 	//data := vo.UsersVo{}
 	//if err := result.Scan(&data.Id, &data.Name, &data.Status); err != nil {
@@ -246,7 +286,12 @@ func (s *sqlInvoke) invokeSelect(local *context.LocalStack, args []reflect.Value
 	//return &data
 	//
 	//return []reflect.Value{reflect.ValueOf(1), reflect.ValueOf(dberr)}
-	return []reflect.Value{defaultValue, reflect.ValueOf(nilError)}
+	if s.returnSqlType != nil {
+		return []reflect.Value{*queryResult, reflect.ValueOf(nilError)}
+	} else {
+		return []reflect.Value{reflect.ValueOf(nilError)}
+	}
+
 }
 
 func (s *sqlInvoke) invokeUpdate(context *context.LocalStack, args []reflect.Value, sql *MapperElementXml) []reflect.Value {
@@ -303,18 +348,69 @@ func (s *sqlInvoke) getArgumentsFromSql(local *context.LocalStack, args []reflec
 	return result, nsql, nil
 }
 
+func (s *sqlInvoke) selectList(stmt *sql.Stmt, param []interface{}, errorFlag int) (*reflect.Value, error) {
+	result, err1 := stmt.Query(param...)
+	if err1 != nil {
+		if errorFlag == 0 {
+			panic(err1)
+		} else {
+			return nil, err1
+		}
+	}
+	defer func() {
+		if result != nil {
+			result.Close() //可以关闭掉未scan连接一直占用
+		}
+	}()
+
+	pageSize := 50
+	queryCount := 0
+	total := reflect.MakeSlice(s.returnSqlType, 0, 0)
+	current := reflect.MakeSlice(s.returnSqlType, 0, pageSize)
+	currentCount := 0
+	for result.Next() {
+		if queryCount != 0 && currentCount >= pageSize {
+			total = reflect.AppendSlice(total, current)
+			current = reflect.MakeSlice(s.returnSqlType, 0, pageSize)
+			currentCount = 0
+		}
+		data := po.Users{}
+		result.Scan(&data.Id, &data.Name, &data.Status) //不scan会导致连接不释放
+
+		current = reflect.Append(current, reflect.ValueOf(&data))
+
+		queryCount++
+		currentCount++
+	}
+	fmt.Printf("queryCount %d \n", queryCount)
+	if queryCount > 0 {
+		total = reflect.AppendSlice(total, current)
+		total = total.Slice(0, queryCount)
+	}
+	return &total, nil
+}
+
+func (s *sqlInvoke) selectRow(stmt *sql.Stmt, param []interface{}, errorFlag int) *reflect.Value {
+	return nil
+}
+
 func newSqlInvoke(
-	target interface{},
-	clazz *proxy.ProxyClass,
-	method *proxy.ProxyMethod,
-	mapper map[string]*MapperElementXml,
-	providerConfig *SqlProviderConfig) *sqlInvoke {
+	target interface{}, //对象
+	clazz *proxy.ProxyClass, //代理信息
+	method *proxy.ProxyMethod, //当前方法代理信息
+	mapper map[string]*MapperElementXml, //对应sql节点
+	returnSqlType reflect.Type, //返回的类型 不是error 如果没有就nil
+	providerConfig *SqlProviderConfig,
+	defaultReturnValue *reflect.Value, //默认返回类型值
+) *sqlInvoke {
 	return &sqlInvoke{
-		target:         target,
-		clazz:          clazz,
-		method:         method,
-		mapper:         mapper,
-		providerConfig: providerConfig,
+		target:             target,
+		clazz:              clazz,
+		method:             method,
+		mapper:             mapper,
+		providerConfig:     providerConfig,
+		returnSqlType:      returnSqlType,
+		defaultReturnValue: defaultReturnValue,
 	}
 }
 
@@ -356,7 +452,15 @@ func AddMapperProxyTarget(target1 proxy.ProxyTarger, xml string) {
 					}
 				}
 
-				invoker := newSqlInvoke(target1, target1.ProxyTarget(), methodSetting, xmlele, providerConfig)
+				var invoker *sqlInvoke
+				fo := field.Type.NumOut()
+				if fo >= 2 {
+					defaultReturnValue := proxy.GetTypeDefaultValue(field.Type.Out(0))
+					invoker = newSqlInvoke(target1, target1.ProxyTarget(), methodSetting, xmlele, field.Type.Out(0), providerConfig, defaultReturnValue)
+				} else {
+					invoker = newSqlInvoke(target1, target1.ProxyTarget(), methodSetting, xmlele, nil, providerConfig, nil)
+				}
+
 				proxyCall := func(command *sqlInvoke) reflect.Value {
 					newCall := reflect.MakeFunc(field.Type, func(in []reflect.Value) []reflect.Value {
 						return command.invoke(in[0].Interface().(*context.LocalStack), in)

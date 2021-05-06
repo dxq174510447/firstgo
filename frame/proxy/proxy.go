@@ -242,3 +242,26 @@ func GetVariableValue(target interface{}, name string) interface{} {
 	}
 
 }
+
+func GetTypeDefaultValue(rtType reflect.Type) *reflect.Value {
+	var result reflect.Value
+	fmt.Println(rtType.Kind())
+	switch rtType.Kind() {
+	case reflect.String:
+		result = reflect.ValueOf("")
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		result = reflect.ValueOf(0)
+	case reflect.Float32, reflect.Float64:
+		result = reflect.ValueOf(0.0)
+	case reflect.Map:
+		v := reflect.MakeMap(rtType)
+		result = v
+	case reflect.Slice:
+		result = reflect.MakeSlice(rtType, 0, 0)
+	case reflect.Ptr:
+		result = reflect.New(rtType).Elem()
+	default:
+		panic(fmt.Sprintf("%s找不到对应默认值", rtType.String()))
+	}
+	return &result
+}
