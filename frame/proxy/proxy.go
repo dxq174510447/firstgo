@@ -86,6 +86,9 @@ func (m *methodInvoke) initFilter() {
 }
 func (m *methodInvoke) invoke(context *context.LocalStack, args []reflect.Value) []reflect.Value {
 	m.initFilter()
+	for _, r := range m.filters {
+		fmt.Println(reflect.ValueOf(r).Elem().Type().Name())
+	}
 	return m.filters[0].Execute(context,
 		m.clazz,
 		m.method,
@@ -212,7 +215,7 @@ func getTargetValue(target interface{}, name string) interface{} {
 		return m[name]
 	case reflect.Ptr:
 		if v.Elem().Kind() == reflect.Struct {
-			return v.FieldByName(name).Interface()
+			return v.Elem().FieldByName(name).Interface()
 		}
 	}
 	panic(fmt.Sprintf("%s找不到对应属性", name))
@@ -221,7 +224,7 @@ func getTargetValue(target interface{}, name string) interface{} {
 // GetVariableValue target 可能map接口 基础类型 指针结构体类型
 func GetVariableValue(target interface{}, name string) interface{} {
 
-	keys := strings.Split(name, ",")
+	keys := strings.Split(name, ".")
 
 	l := len(keys)
 	if l == 1 {

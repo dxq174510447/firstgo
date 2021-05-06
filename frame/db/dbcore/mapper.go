@@ -189,8 +189,7 @@ func (s *sqlInvoke) invokeSelect(local *context.LocalStack, args []reflect.Value
 
 	var defaultValue reflect.Value = reflect.ValueOf(1)
 	//var defaultError *DaoException = &DaoException{exception.FrameException{Code: 505,Message: "数据库操作错误"}}
-	var nilError error
-
+	var nilError *DaoException
 	errorFlag := GetErrorHandleFlag(local) //0 panic 1 return
 	//con := GetDbConnection(local)
 	//if con == nil {
@@ -212,7 +211,7 @@ func (s *sqlInvoke) invokeSelect(local *context.LocalStack, args []reflect.Value
 		}
 	}
 
-	sqlParam, err2 := s.getArgumentsFromSql(local, args, sql)
+	sqlParam, newsql, err2 := s.getArgumentsFromSql(local, args, sql)
 	if err2 != nil {
 		if errorFlag == 0 {
 			panic(err2)
@@ -220,8 +219,11 @@ func (s *sqlInvoke) invokeSelect(local *context.LocalStack, args []reflect.Value
 			return []reflect.Value{defaultValue, reflect.ValueOf(err2)}
 		}
 	}
-	fmt.Println(sql)
-	fmt.Println(sqlParam)
+	if newsql != "" {
+		sql = newsql
+	}
+	fmt.Printf("Sql[%s]: %s \n", sqlEle.Id, sql)
+	fmt.Printf("Paramters[%s]: %s \n", sqlEle.Id, sqlParam)
 	//stmt, err := con.Con.PrepareContext(con.Ctx, sql)
 	//if err != nil {
 	//	if errorFlag == 0 {
@@ -257,10 +259,10 @@ func (s *sqlInvoke) invokeInsert(context *context.LocalStack, args []reflect.Val
 	return nil
 }
 
-func (s *sqlInvoke) getArgumentsFromSql(local *context.LocalStack, args []reflect.Value, sql string) ([]interface{}, error) {
+func (s *sqlInvoke) getArgumentsFromSql(local *context.LocalStack, args []reflect.Value, sql string) ([]interface{}, string, error) {
 	// 去除局部变量参数
 	if len(args) <= 1 {
-		return nil, nil
+		return nil, "", nil
 	}
 
 	// 只有一个参数 结构体 基础类型 string
@@ -287,16 +289,16 @@ func (s *sqlInvoke) getArgumentsFromSql(local *context.LocalStack, args []reflec
 		root = root1
 	}
 
-	variables := parseAndGetSqlVariables(sql)
+	variables, nsql := parseAndGetSqlVariables(sql)
 	if len(variables) == 0 {
-		return nil, nil
+		return nil, "", nil
 	}
 	var result []interface{}
 	for _, v := range variables {
 		m := proxy.GetVariableValue(root, v)
 		result = append(result, m)
 	}
-	return result, nil
+	return result, nsql, nil
 }
 
 func newSqlInvoke(
@@ -381,7 +383,7 @@ func NewSqlProvierConfigAnnotation(param string) []*proxy.AnnotationClass {
 }
 
 // parseAndGetSqlVariables #{ada} 获取ada
-func parseAndGetSqlVariables(sql string) []string {
+func parseAndGetSqlVariables(sql string) ([]string, string) {
 	reg := regexp.MustCompile(`(?m)#\{(\S+?)\}`)
 	result := reg.FindAllStringSubmatch(sql, -1)
 	if result != nil {
@@ -389,8 +391,8 @@ func parseAndGetSqlVariables(sql string) []string {
 		for _, k := range result {
 			r1 = append(r1, k[1])
 		}
-		return r1
+		return r1, reg.ReplaceAllString(sql, "?")
 	} else {
-		return nil
+		return nil, ""
 	}
 }

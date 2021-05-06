@@ -7,19 +7,19 @@ const UsersXml = `
 	<select id="Find1">
 			select * from users where status = 1
 	</select>
-	<select id="find2">
+	<select id="Find2">
+			select * from users where  status = #{status}
+	</select>
+	<select id="Find3">
 			select * from users where status = #{status} and name = #{name}
 	</select>
-	<select id="find3">
-			select * from users where status = #{status} and name = #{name}
-	</select>
-	<select id="find4">
+	<select id="Find4">
 			select * from users where id = #{Id} and status = #{Status}
 	</select>
-	<select id="find5">
+	<select id="Find5">
 			select * from users where id = #{user.Id} and status = #{user.Status} and status = #{status}
 	</select>
-	<select id="find6">
+	<select id="Find6">
 			select * from users where id = #{user.Id} and status = #{user1.Status}
 	</select>
 
