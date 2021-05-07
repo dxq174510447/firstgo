@@ -7,12 +7,12 @@ import (
 	"firstgo/frame/context"
 	"firstgo/frame/exception"
 	"firstgo/frame/proxy"
-	"firstgo/povo/po"
 	"fmt"
 	"reflect"
 	"regexp"
 	"strings"
 	"text/template"
+	"time"
 )
 
 type SqlProviderConfig struct {
@@ -118,14 +118,27 @@ func GetMapperFactory() *MapperFactory {
 	return &mapperFactory
 }
 
+type sqlColumnType struct {
+	column      *sql.ColumnType
+	field       *reflect.StructField
+	defaultType reflect.Type
+}
+
 type sqlInvoke struct {
-	target             interface{}
-	clazz              *proxy.ProxyClass
-	method             *proxy.ProxyMethod
-	mapper             map[string]*MapperElementXml
-	providerConfig     *SqlProviderConfig
-	returnSqlType      reflect.Type
-	defaultReturnValue *reflect.Value
+	target         interface{}
+	clazz          *proxy.ProxyClass
+	method         *proxy.ProxyMethod
+	mapper         map[string]*MapperElementXml
+	providerConfig *SqlProviderConfig
+	//slice int string ptr float64
+	returnSqlType reflect.Type
+
+	//具体返回的类型 如果返回的是指针 就对应的是结构体 如果返回的是slice 就对应的里面的元素类型，如果元素是指针就是对应的结构体 否则就是int,string等
+	returnSqlElementType reflect.Type
+	defaultReturnValue   *reflect.Value
+	//如果返回的是结构体类型 字段field
+	structFieldMap map[string]reflect.StructField
+	sqlFieldMap    []*sqlColumnType
 }
 
 func (s *sqlInvoke) invoke(context *context.LocalStack, args []reflect.Value) []reflect.Value {
@@ -193,7 +206,7 @@ func (s *sqlInvoke) getSqlFromTpl(context *context.LocalStack, args []reflect.Va
 // 必须返回1-2个参数，其他一个必须是error并且放在最后一个返回值，至于sql返回有没有都行
 // 默认只返回3种类型 slice，单个结构体，int float64 string
 func (s *sqlInvoke) invokeSelect(local *context.LocalStack, args []reflect.Value, sqlEle *MapperElementXml) []reflect.Value {
-	var nilError *DaoException
+	var nilError = reflect.Zero(reflect.TypeOf((*error)(nil)).Elem())
 
 	errorFlag := GetErrorHandleFlag(local) //0 panic 1 return
 	con := GetDbConnection(local)
@@ -279,17 +292,10 @@ func (s *sqlInvoke) invokeSelect(local *context.LocalStack, args []reflect.Value
 		}
 	}
 
-	//data := vo.UsersVo{}
-	//if err := result.Scan(&data.Id, &data.Name, &data.Status); err != nil {
-	//	return nil
-	//}
-	//return &data
-	//
-	//return []reflect.Value{reflect.ValueOf(1), reflect.ValueOf(dberr)}
 	if s.returnSqlType != nil {
-		return []reflect.Value{*queryResult, reflect.ValueOf(nilError)}
+		return []reflect.Value{*queryResult, nilError}
 	} else {
-		return []reflect.Value{reflect.ValueOf(nilError)}
+		return []reflect.Value{nilError}
 	}
 
 }
@@ -368,16 +374,51 @@ func (s *sqlInvoke) selectList(stmt *sql.Stmt, param []interface{}, errorFlag in
 	total := reflect.MakeSlice(s.returnSqlType, 0, 0)
 	current := reflect.MakeSlice(s.returnSqlType, 0, pageSize)
 	currentCount := 0
+
+	//test
+	r1, e1 := result.ColumnTypes()
+	if e1 == nil {
+		for _, r11 := range r1 {
+			fmt.Println(r11)
+		}
+	}
+
+	r2, e2 := result.Columns()
+	if e2 == nil {
+		for _, r11 := range r2 {
+			fmt.Println(r11)
+		}
+	}
+
+	if s.sqlFieldMap == nil {
+		r1, e1 := result.ColumnTypes()
+		if e1 == nil {
+			sts := make([]*sqlColumnType, len(r1), len(r1))
+			for k, ct := range r1 {
+				var m1 *sqlColumnType = s.coverToGoType(ct)
+				sts[k] = m1
+			}
+			s.sqlFieldMap = sts
+		}
+	}
+
 	for result.Next() {
 		if queryCount != 0 && currentCount >= pageSize {
 			total = reflect.AppendSlice(total, current)
 			current = reflect.MakeSlice(s.returnSqlType, 0, pageSize)
 			currentCount = 0
 		}
-		data := po.Users{}
-		result.Scan(&data.Id, &data.Name, &data.Status) //不scan会导致连接不释放
 
-		current = reflect.Append(current, reflect.ValueOf(&data))
+		r1, err2 := s.scanRow(result)
+		if err2 != nil {
+			if errorFlag == 0 {
+				panic(err2)
+			} else {
+				return nil, err2
+			}
+		}
+
+		current = reflect.Append(current, *r1)
 
 		queryCount++
 		currentCount++
@@ -394,6 +435,75 @@ func (s *sqlInvoke) selectRow(stmt *sql.Stmt, param []interface{}, errorFlag int
 	return nil
 }
 
+func (s *sqlInvoke) scanRow(result *sql.Rows) (*reflect.Value, error) {
+	//if s.returnSqlElementType != nil {
+	//	if s.returnSqlElementType.Kind() == reflect.Struct{
+	//		nt := reflect.New(s.returnSqlElementType)
+	//
+	//	}else{
+	//
+	//	}
+	//}
+	valuesetptr := make([]interface{}, len(s.sqlFieldMap), len(s.sqlFieldMap))
+	valuesetval := make([]interface{}, len(s.sqlFieldMap), len(s.sqlFieldMap))
+	for k, v := range s.sqlFieldMap {
+		dv := proxy.GetTypeDefaultValue(v.defaultType)
+		d1 := (*dv).Interface()
+		valuesetptr[k] = &d1
+		valuesetval[k] = d1
+	}
+
+	//data := po.Users{}
+	e1 := result.Scan(valuesetptr...) //不scan会导致连接不释放
+	if e1 != nil {
+		return nil, e1
+	}
+	fmt.Println(valuesetval)
+	var result1 interface{}
+	if s.returnSqlElementType.Kind() == reflect.Struct {
+		h := reflect.New(s.returnSqlElementType)
+		for k, v := range s.sqlFieldMap {
+			if v.field != nil {
+				h.FieldByName(v.field.Name).Set(reflect.ValueOf(valuesetval[k]))
+			}
+		}
+		result1 = &h
+	}
+	v := reflect.ValueOf(result1)
+	return &v, nil
+}
+
+func (s *sqlInvoke) coverToGoType(ct *sql.ColumnType) *sqlColumnType {
+	result := sqlColumnType{column: ct}
+	addDefaultType := true
+
+	if s.structFieldMap != nil {
+		columnName := ct.Name()
+		fieldName := proxy.GetCamelCaseName(columnName)
+		if field, ok := s.structFieldMap[fieldName]; ok {
+			addDefaultType = false
+			result.field = &field
+			result.defaultType = field.Type
+		}
+	}
+
+	if addDefaultType {
+		databasetype := strings.ToLower(ct.DatabaseTypeName())
+		if strings.Index(databasetype, "int") >= 0 {
+			result.defaultType = reflect.TypeOf(int(1))
+		} else if strings.Index(databasetype, "decimal") >= 0 {
+			result.defaultType = reflect.TypeOf(float64(1.0))
+		} else if strings.Index(databasetype, "char") >= 0 {
+			result.defaultType = reflect.TypeOf(string(""))
+		} else if strings.Index(databasetype, "date") >= 0 {
+			result.defaultType = reflect.TypeOf(time.Now())
+		} else {
+			result.defaultType = reflect.TypeOf(string(""))
+		}
+	}
+	return &result
+}
+
 func newSqlInvoke(
 	target interface{}, //对象
 	clazz *proxy.ProxyClass, //代理信息
@@ -402,15 +512,39 @@ func newSqlInvoke(
 	returnSqlType reflect.Type, //返回的类型 不是error 如果没有就nil
 	providerConfig *SqlProviderConfig,
 	defaultReturnValue *reflect.Value, //默认返回类型值
+	structFieldMap map[string]reflect.StructField,
 ) *sqlInvoke {
+
+	var returnSqlElementType reflect.Type = nil
+	if returnSqlType != nil {
+		switch returnSqlType.Kind() {
+		case reflect.Slice:
+			if returnSqlType.Elem().Kind() == reflect.Ptr {
+				returnSqlElementType = returnSqlType.Elem().Elem()
+			} else {
+				returnSqlElementType = returnSqlType.Elem()
+			}
+		case reflect.Ptr:
+			if returnSqlType.Elem().Kind() == reflect.Struct {
+				returnSqlElementType = returnSqlType.Elem()
+			} else {
+				returnSqlElementType = returnSqlType
+			}
+		default:
+			returnSqlElementType = returnSqlType
+		}
+	}
+
 	return &sqlInvoke{
-		target:             target,
-		clazz:              clazz,
-		method:             method,
-		mapper:             mapper,
-		providerConfig:     providerConfig,
-		returnSqlType:      returnSqlType,
-		defaultReturnValue: defaultReturnValue,
+		target:               target,
+		clazz:                clazz,
+		method:               method,
+		mapper:               mapper,
+		providerConfig:       providerConfig,
+		returnSqlType:        returnSqlType,
+		defaultReturnValue:   defaultReturnValue,
+		structFieldMap:       structFieldMap,
+		returnSqlElementType: returnSqlElementType,
 	}
 }
 
@@ -456,9 +590,15 @@ func AddMapperProxyTarget(target1 proxy.ProxyTarger, xml string) {
 				fo := field.Type.NumOut()
 				if fo >= 2 {
 					defaultReturnValue := proxy.GetTypeDefaultValue(field.Type.Out(0))
-					invoker = newSqlInvoke(target1, target1.ProxyTarget(), methodSetting, xmlele, field.Type.Out(0), providerConfig, defaultReturnValue)
+					structFields := proxy.GetStructField(field.Type.Out(0))
+					invoker = newSqlInvoke(target1, target1.ProxyTarget(),
+						methodSetting,
+						xmlele, field.Type.Out(0),
+						providerConfig, defaultReturnValue, structFields)
 				} else {
-					invoker = newSqlInvoke(target1, target1.ProxyTarget(), methodSetting, xmlele, nil, providerConfig, nil)
+					invoker = newSqlInvoke(target1, target1.ProxyTarget(), methodSetting,
+						xmlele, nil,
+						providerConfig, nil, nil)
 				}
 
 				proxyCall := func(command *sqlInvoke) reflect.Value {

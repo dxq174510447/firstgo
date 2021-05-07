@@ -4,6 +4,7 @@ import (
 	"firstgo/frame/context"
 	"fmt"
 	"reflect"
+	"regexp"
 	"sort"
 	"strings"
 	"sync"
@@ -243,9 +244,46 @@ func GetVariableValue(target interface{}, name string) interface{} {
 
 }
 
+func GetStructField(rtType reflect.Type) map[string]reflect.StructField {
+	ref := make(map[string]reflect.StructField)
+	switch rtType.Kind() {
+	case reflect.Slice:
+		if rtType.Elem().Kind() == reflect.Struct {
+			n := rtType.Elem().NumField()
+			for i := 0; i < n; i++ {
+				sf := rtType.Elem().Field(i)
+				ref[sf.Name] = sf
+			}
+			return ref
+		} else if rtType.Elem().Kind() == reflect.Ptr && rtType.Elem().Elem().Kind() == reflect.Struct {
+			n := rtType.Elem().Elem().NumField()
+			for i := 0; i < n; i++ {
+				sf := rtType.Elem().Elem().Field(i)
+				ref[sf.Name] = sf
+			}
+			return ref
+		} else {
+			return nil
+		}
+	case reflect.Ptr:
+		if rtType.Elem().Kind() != reflect.Struct {
+			return nil
+		} else {
+			n := rtType.Elem().NumField()
+			for i := 0; i < n; i++ {
+				sf := rtType.Elem().Field(i)
+				ref[sf.Name] = sf
+			}
+			return ref
+		}
+	default:
+		return nil
+	}
+
+}
+
 func GetTypeDefaultValue(rtType reflect.Type) *reflect.Value {
 	var result reflect.Value
-	fmt.Println(rtType.Kind())
 	switch rtType.Kind() {
 	case reflect.String:
 		result = reflect.ValueOf("")
@@ -259,9 +297,21 @@ func GetTypeDefaultValue(rtType reflect.Type) *reflect.Value {
 	case reflect.Slice:
 		result = reflect.MakeSlice(rtType, 0, 0)
 	case reflect.Ptr:
-		result = reflect.New(rtType).Elem()
+		result = reflect.New(rtType)
+	case reflect.Struct:
+		result = reflect.New(rtType)
 	default:
 		panic(fmt.Sprintf("%s找不到对应默认值", rtType.String()))
 	}
 	return &result
+}
+
+var matchAllCap = regexp.MustCompile(`[^A-Za-z0-9]+`)
+
+func GetCamelCaseName(str string) string {
+	st := matchAllCap.Split(str, -1)
+	for k, s := range st {
+		st[k] = strings.Title(strings.ToLower(s))
+	}
+	return strings.Join(st, "")
 }

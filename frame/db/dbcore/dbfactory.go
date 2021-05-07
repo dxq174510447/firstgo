@@ -28,7 +28,7 @@ type DatabaseFactory struct {
 
 func (c *DatabaseFactory) NewDatabase() *sql.DB {
 	//user:password@tcp(localhost:5555)/dbname?characterEncoding=UTF-8
-	url := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8",
+	url := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8&parseTime=true&loc=Local",
 		c.dbUser, c.dbPwd, c.dbHost, c.dbPort, c.dbName,
 	)
 	fmt.Println(url)
