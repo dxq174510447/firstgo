@@ -289,7 +289,9 @@ func GetMethodReturnDefaultValue(rtType reflect.Type) *reflect.Value {
 	switch rtType.Kind() {
 	case reflect.String:
 		result = reflect.ValueOf("")
-	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+	case reflect.Int64:
+		result = reflect.ValueOf(int64(0))
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32:
 		result = reflect.ValueOf(0)
 	case reflect.Float32, reflect.Float64:
 		result = reflect.ValueOf(0.0)
@@ -316,4 +318,23 @@ func GetCamelCaseName(str string) string {
 		st[k] = strings.Title(strings.ToLower(s))
 	}
 	return strings.Join(st, "")
+}
+
+// SetStructFieldValue target 目标对象  name fieldname value 值所对应的指针
+func SetStructFieldValue(target *reflect.Value, name string, value interface{}) {
+	switch reflect.ValueOf(value).Elem().Kind() {
+	case reflect.String:
+		s := value.(*string)
+		(*target).FieldByName(name).Set(reflect.ValueOf(*s))
+	case reflect.Int64:
+		s := value.(*int64)
+		(*target).FieldByName(name).Set(reflect.ValueOf(*s))
+	case reflect.Int:
+		s := value.(*int)
+		(*target).FieldByName(name).Set(reflect.ValueOf(*s))
+	case reflect.Float64:
+		s := value.(*float64)
+		(*target).FieldByName(name).Set(reflect.ValueOf(*s))
+	}
+
 }

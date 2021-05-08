@@ -18,7 +18,7 @@ const UsersXml = `
 			select * from users where id = #{Id} and status = #{Status}
 	</select>
 	<select id="Find5">
-			select * from users where id > 10 order by id desc
+			select id,name,password,status,fee,fee_status,fee_total,create_date from users where id >= 94 order by id desc
 	</select>
 	<select id="Find6">
 			select * from users where 

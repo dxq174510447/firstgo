@@ -376,19 +376,19 @@ func (s *sqlInvoke) selectList(stmt *sql.Stmt, param []interface{}, errorFlag in
 	currentCount := 0
 
 	//test
-	r1, e1 := result.ColumnTypes()
-	if e1 == nil {
-		for _, r11 := range r1 {
-			fmt.Println(r11)
-		}
-	}
-
-	r2, e2 := result.Columns()
-	if e2 == nil {
-		for _, r11 := range r2 {
-			fmt.Println(r11)
-		}
-	}
+	//r1, e1 := result.ColumnTypes()
+	//if e1 == nil {
+	//	for _, r11 := range r1 {
+	//		fmt.Println(r11)
+	//	}
+	//}
+	//
+	//r2, e2 := result.Columns()
+	//if e2 == nil {
+	//	for _, r11 := range r2 {
+	//		fmt.Println(r11)
+	//	}
+	//}
 
 	if s.sqlFieldMap == nil {
 		r1, e1 := result.ColumnTypes()
@@ -436,33 +436,29 @@ func (s *sqlInvoke) selectRow(stmt *sql.Stmt, param []interface{}, errorFlag int
 }
 
 func (s *sqlInvoke) scanRow(result *sql.Rows) (*reflect.Value, error) {
-	valuesetptr := make([]interface{}, len(s.sqlFieldMap), len(s.sqlFieldMap))
-	valuesetval := make([]interface{}, len(s.sqlFieldMap), len(s.sqlFieldMap))
+	valueptr := make([]interface{}, len(s.sqlFieldMap), len(s.sqlFieldMap))
 	for k, v := range s.sqlFieldMap {
-		dv := GetSqlFieldReturnDefaultValue(v.defaultType)
-		d1 := (*dv).Interface()
-		valuesetptr[k] = &d1
-		valuesetval[k] = d1
+		d1 := GetSqlFieldReturnDefaultValue(v.defaultType)
+		fmt.Println(v.field.Name, v.defaultType.Kind(), reflect.ValueOf(d1).Elem().Kind())
+		valueptr[k] = d1
 	}
-
-	//data := po.Users{}
-	e1 := result.Scan(valuesetptr...) //不scan会导致连接不释放
+	e1 := result.Scan(valueptr...) //不scan会导致连接不释放
 	if e1 != nil {
 		return nil, e1
 	}
-	fmt.Println(valuesetval)
-	var result1 interface{}
+
+	var result1 *reflect.Value
 	if s.returnSqlElementType.Kind() == reflect.Struct {
-		h := reflect.New(s.returnSqlElementType)
+		hp := reflect.New(s.returnSqlElementType)
+		hv := hp.Elem()
 		for k, v := range s.sqlFieldMap {
 			if v.field != nil {
-				h.FieldByName(v.field.Name).Set(reflect.ValueOf(valuesetval[k]))
+				proxy.SetStructFieldValue(&hv, v.field.Name, valueptr[k])
 			}
 		}
-		result1 = &h
+		result1 = &hp
 	}
-	v := reflect.ValueOf(result1)
-	return &v, nil
+	return result1, nil
 }
 
 func (s *sqlInvoke) coverToGoType(ct *sql.ColumnType) *sqlColumnType {
@@ -478,7 +474,7 @@ func (s *sqlInvoke) coverToGoType(ct *sql.ColumnType) *sqlColumnType {
 			result.defaultType = field.Type
 		}
 	}
-
+	fmt.Println(result.column.Name(), result.field.Type)
 	if addDefaultType {
 		databasetype := strings.ToLower(ct.DatabaseTypeName())
 		if strings.Index(databasetype, "int") >= 0 {
@@ -638,26 +634,40 @@ func parseAndGetSqlVariables(sql string) ([]string, string) {
 
 // GetSqlFieldReturnDefaultValue 字段的默认值 int:默认值 float64:默认值 string:默认值 slice:默认值 ptr(struct)空的指针 map:默认值
 // 当有错误的时候 返回这个默认结果 和 错误
-func GetSqlFieldReturnDefaultValue(rtType reflect.Type) *reflect.Value {
-	var result reflect.Value
+func GetSqlFieldReturnDefaultValue(rtType reflect.Type) interface{} {
 	switch rtType.Kind() {
 	case reflect.String:
-		result = reflect.ValueOf("")
-	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		result = reflect.ValueOf(0)
+		v := ""
+		return &v
+	case reflect.Int64:
+		v := int64(0)
+		return &v
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32:
+		v := 0
+		return &v
 	case reflect.Float32, reflect.Float64:
-		result = reflect.ValueOf(0.0)
+		v := 0.0
+		return &v
 	case reflect.Map:
 		v := reflect.MakeMap(rtType)
-		result = v
+		b := v.Interface()
+		return &b
 	case reflect.Slice:
-		result = reflect.MakeSlice(rtType, 0, 0)
+		v := reflect.MakeSlice(rtType, 0, 0)
+		b := v.Interface()
+		return &b
 	case reflect.Ptr:
-		result = reflect.New(rtType).Elem()
+		//fmt.Println(rtType.Elem().String())
+		v := reflect.New(rtType.Elem())
+		b := v.Interface().(*time.Time)
+		fmt.Println(b)
+		//TODO dd
+		return v.Interface()
 	case reflect.Struct:
-		result = reflect.New(rtType).Elem()
+		v := reflect.New(rtType).Elem()
+		b := v.Interface()
+		return &b
 	default:
 		panic(fmt.Sprintf("%s找不到对应默认值", rtType.String()))
 	}
-	return &result
 }
