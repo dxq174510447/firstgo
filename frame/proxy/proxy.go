@@ -282,7 +282,9 @@ func GetStructField(rtType reflect.Type) map[string]reflect.StructField {
 
 }
 
-func GetTypeDefaultValue(rtType reflect.Type) *reflect.Value {
+// GetMethodReturnDefaultValue int:默认值 float64:默认值 string:默认值 slice:默认值 ptr(struct)空的指针 map:默认值
+// 当有错误的时候 返回这个默认结果 和 错误
+func GetMethodReturnDefaultValue(rtType reflect.Type) *reflect.Value {
 	var result reflect.Value
 	switch rtType.Kind() {
 	case reflect.String:
@@ -297,9 +299,9 @@ func GetTypeDefaultValue(rtType reflect.Type) *reflect.Value {
 	case reflect.Slice:
 		result = reflect.MakeSlice(rtType, 0, 0)
 	case reflect.Ptr:
-		result = reflect.New(rtType)
+		result = reflect.New(rtType).Elem()
 	case reflect.Struct:
-		result = reflect.New(rtType)
+		result = reflect.New(rtType).Elem()
 	default:
 		panic(fmt.Sprintf("%s找不到对应默认值", rtType.String()))
 	}

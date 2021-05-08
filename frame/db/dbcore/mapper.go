@@ -436,18 +436,10 @@ func (s *sqlInvoke) selectRow(stmt *sql.Stmt, param []interface{}, errorFlag int
 }
 
 func (s *sqlInvoke) scanRow(result *sql.Rows) (*reflect.Value, error) {
-	//if s.returnSqlElementType != nil {
-	//	if s.returnSqlElementType.Kind() == reflect.Struct{
-	//		nt := reflect.New(s.returnSqlElementType)
-	//
-	//	}else{
-	//
-	//	}
-	//}
 	valuesetptr := make([]interface{}, len(s.sqlFieldMap), len(s.sqlFieldMap))
 	valuesetval := make([]interface{}, len(s.sqlFieldMap), len(s.sqlFieldMap))
 	for k, v := range s.sqlFieldMap {
-		dv := proxy.GetTypeDefaultValue(v.defaultType)
+		dv := GetSqlFieldReturnDefaultValue(v.defaultType)
 		d1 := (*dv).Interface()
 		valuesetptr[k] = &d1
 		valuesetval[k] = d1
@@ -496,7 +488,8 @@ func (s *sqlInvoke) coverToGoType(ct *sql.ColumnType) *sqlColumnType {
 		} else if strings.Index(databasetype, "char") >= 0 {
 			result.defaultType = reflect.TypeOf(string(""))
 		} else if strings.Index(databasetype, "date") >= 0 {
-			result.defaultType = reflect.TypeOf(time.Now())
+			n := time.Now()
+			result.defaultType = reflect.TypeOf(&n)
 		} else {
 			result.defaultType = reflect.TypeOf(string(""))
 		}
@@ -589,7 +582,7 @@ func AddMapperProxyTarget(target1 proxy.ProxyTarger, xml string) {
 				var invoker *sqlInvoke
 				fo := field.Type.NumOut()
 				if fo >= 2 {
-					defaultReturnValue := proxy.GetTypeDefaultValue(field.Type.Out(0))
+					defaultReturnValue := proxy.GetMethodReturnDefaultValue(field.Type.Out(0))
 					structFields := proxy.GetStructField(field.Type.Out(0))
 					invoker = newSqlInvoke(target1, target1.ProxyTarget(),
 						methodSetting,
@@ -641,4 +634,30 @@ func parseAndGetSqlVariables(sql string) ([]string, string) {
 	} else {
 		return nil, ""
 	}
+}
+
+// GetSqlFieldReturnDefaultValue 字段的默认值 int:默认值 float64:默认值 string:默认值 slice:默认值 ptr(struct)空的指针 map:默认值
+// 当有错误的时候 返回这个默认结果 和 错误
+func GetSqlFieldReturnDefaultValue(rtType reflect.Type) *reflect.Value {
+	var result reflect.Value
+	switch rtType.Kind() {
+	case reflect.String:
+		result = reflect.ValueOf("")
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		result = reflect.ValueOf(0)
+	case reflect.Float32, reflect.Float64:
+		result = reflect.ValueOf(0.0)
+	case reflect.Map:
+		v := reflect.MakeMap(rtType)
+		result = v
+	case reflect.Slice:
+		result = reflect.MakeSlice(rtType, 0, 0)
+	case reflect.Ptr:
+		result = reflect.New(rtType).Elem()
+	case reflect.Struct:
+		result = reflect.New(rtType).Elem()
+	default:
+		panic(fmt.Sprintf("%s找不到对应默认值", rtType.String()))
+	}
+	return &result
 }
