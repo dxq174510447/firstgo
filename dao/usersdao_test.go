@@ -2,6 +2,7 @@ package dao
 
 import (
 	"firstgo/frame/context"
+	"firstgo/frame/db/dbcore"
 	_ "firstgo/frame/db/filter"
 	"firstgo/povo/po"
 	"fmt"
@@ -18,14 +19,18 @@ func TestName(t *testing.T) {
 	//fmt.Println(m3, err3)
 	//m4, err4 := GetUsersDao().Find4(local, &po.Users{Id: 4, Name: "haha", Status: 4})
 	//fmt.Println(m4, err4)
-	m5, err5 := GetUsersDao().Find5(local, &po.Users{Id: 94, Name: "haha", Status: 4}, 123)
+	m5, err5 := GetUsersDao().Find5(local, &po.Users{Id: 94}, 123)
 	if err5 != nil {
 		fmt.Println(err5)
 		panic(err5)
 	} else {
 		if len(m5) > 0 {
 			for _, v := range m5 {
-				fmt.Println("-->", *v)
+				fmt.Println("-->", dbcore.GetSqlNullTypeValue(v.Password),
+					dbcore.GetSqlNullTypeValue(v.Status),
+					dbcore.GetSqlNullTypeValue(v.Fee),
+					dbcore.GetSqlNullTypeValue(v.CreateTime),
+					dbcore.GetSqlNullTypeValue(v.CreateDate))
 			}
 		} else {
 			fmt.Println("result length 0")

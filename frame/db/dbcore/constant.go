@@ -1,7 +1,10 @@
 package dbcore
 
 import (
+	"database/sql"
 	"firstgo/frame/context"
+	"reflect"
+	"time"
 )
 
 const (
@@ -35,6 +38,14 @@ const (
 	AnnotationSqlProviderConfig         = "AnnotationSqlProviderConfig_"
 	AnnotationSqlProviderConfigValueKey = "AnnotationSqlProviderConfigValueKey_"
 )
+
+var SqlNullInt32Type reflect.Type = reflect.TypeOf(sql.NullInt32{})
+var SqlNullTimeType reflect.Type = reflect.TypeOf(sql.NullTime{})
+var SqlNullFloat64Type reflect.Type = reflect.TypeOf(sql.NullFloat64{})
+var SqlNullStringType reflect.Type = reflect.TypeOf(sql.NullString{})
+var SqlNullInt64Type reflect.Type = reflect.TypeOf(sql.NullInt64{})
+var SqlNullBoolType reflect.Type = reflect.TypeOf(sql.NullBool{})
+var GoTimeType reflect.Type = reflect.TypeOf(time.Time{})
 
 func SetDbConnection(local *context.LocalStack, con *DatabaseConnection) {
 	local.Set(DataBaseConnectKey, con)

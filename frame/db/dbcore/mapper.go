@@ -446,14 +446,13 @@ func (s *sqlInvoke) scanRow(result *sql.Rows) (*reflect.Value, error) {
 	if e1 != nil {
 		return nil, e1
 	}
-
 	var result1 *reflect.Value
 	if s.returnSqlElementType.Kind() == reflect.Struct {
 		hp := reflect.New(s.returnSqlElementType)
 		hv := hp.Elem()
 		for k, v := range s.sqlFieldMap {
 			if v.field != nil {
-				proxy.SetStructFieldValue(&hv, v.field.Name, valueptr[k])
+				SetEntityFieldValue(&hv, v.field, valueptr[k])
 			}
 		}
 		result1 = &hp
@@ -632,42 +631,134 @@ func parseAndGetSqlVariables(sql string) ([]string, string) {
 	}
 }
 
-// GetSqlFieldReturnDefaultValue 字段的默认值 int:默认值 float64:默认值 string:默认值 slice:默认值 ptr(struct)空的指针 map:默认值
-// 当有错误的时候 返回这个默认结果 和 错误
+// GetSqlFieldReturnDefaultValue  用来接受sql column 返回的值 类型 int int64 float64 string *Time
+// 当有错误的时候 返回这个默认结果的指针 和 错误
 func GetSqlFieldReturnDefaultValue(rtType reflect.Type) interface{} {
 	switch rtType.Kind() {
 	case reflect.String:
-		v := ""
+		v := sql.NullString{}
 		return &v
 	case reflect.Int64:
-		v := int64(0)
+		v := sql.NullInt64{}
 		return &v
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32:
-		v := 0
+		v := sql.NullInt32{}
 		return &v
 	case reflect.Float32, reflect.Float64:
-		v := 0.0
+		v := sql.NullFloat64{}
 		return &v
-	case reflect.Map:
-		v := reflect.MakeMap(rtType)
-		b := v.Interface()
-		return &b
-	case reflect.Slice:
-		v := reflect.MakeSlice(rtType, 0, 0)
-		b := v.Interface()
-		return &b
 	case reflect.Ptr:
-		//fmt.Println(rtType.Elem().String())
-		v := reflect.New(rtType.Elem())
-		b := v.Interface().(*time.Time)
-		fmt.Println(b)
-		//TODO dd
-		return v.Interface()
-	case reflect.Struct:
-		v := reflect.New(rtType).Elem()
-		b := v.Interface()
-		return &b
+		eleType := rtType.Elem()
+		if eleType == GoTimeType {
+			v := sql.NullTime{}
+			return &v
+		} else if eleType == SqlNullStringType {
+			v := sql.NullString{}
+			return &v
+		} else if eleType == SqlNullTimeType {
+			v := sql.NullTime{}
+			return &v
+		} else if eleType == SqlNullInt64Type {
+			v := sql.NullInt64{}
+			return &v
+		} else if eleType == SqlNullInt32Type {
+			v := sql.NullInt32{}
+			return &v
+		} else if eleType == SqlNullFloat64Type {
+			v := sql.NullFloat64{}
+			return &v
+		} else if eleType == SqlNullBoolType {
+			v := sql.NullBool{}
+			return &v
+		}
+		return nil
 	default:
 		panic(fmt.Sprintf("%s找不到对应默认值", rtType.String()))
 	}
+}
+
+// SetEntityFieldValue target 目标对象  name fieldname value sql.null* 的指针
+// 如果value指针对应的是struct 根据ptr来判断是否是指针类型
+func SetEntityFieldValue(target *reflect.Value, field *reflect.StructField, value interface{}) {
+	switch field.Type.Kind() {
+	case reflect.String:
+		s := value.(*sql.NullString)
+		if s.Valid {
+			(*target).FieldByName(field.Name).Set(reflect.ValueOf(s.String))
+		}
+	case reflect.Int64:
+		s := value.(*sql.NullInt64)
+		if s.Valid {
+			(*target).FieldByName(field.Name).Set(reflect.ValueOf(s.Int64))
+		}
+	case reflect.Int:
+		s := value.(*sql.NullInt32)
+		if s.Valid {
+			(*target).FieldByName(field.Name).Set(reflect.ValueOf(int(s.Int32)))
+		}
+	case reflect.Float64:
+		s := value.(*sql.NullFloat64)
+		if s.Valid {
+			(*target).FieldByName(field.Name).Set(reflect.ValueOf(s.Float64))
+		}
+	case reflect.Ptr:
+		//fix field is *Time ,same as ptr
+		eleType := field.Type.Elem()
+		if eleType == GoTimeType {
+			s := value.(*sql.NullTime)
+			if s.Valid {
+				(*target).FieldByName(field.Name).Set(reflect.ValueOf(&(s.Time)))
+			}
+		} else if eleType == SqlNullStringType {
+			s := value.(*sql.NullString)
+			if s.Valid {
+				(*target).FieldByName(field.Name).Set(reflect.ValueOf(s))
+			}
+		} else if eleType == SqlNullTimeType {
+			s := value.(*sql.NullTime)
+			if s.Valid {
+				(*target).FieldByName(field.Name).Set(reflect.ValueOf(s))
+			}
+		} else if eleType == SqlNullInt64Type {
+			s := value.(*sql.NullInt64)
+			if s.Valid {
+				(*target).FieldByName(field.Name).Set(reflect.ValueOf(s))
+			}
+		} else if eleType == SqlNullInt32Type {
+			s := value.(*sql.NullInt32)
+			if s.Valid {
+				(*target).FieldByName(field.Name).Set(reflect.ValueOf(s))
+			}
+		} else if eleType == SqlNullFloat64Type {
+			s := value.(*sql.NullFloat64)
+			if s.Valid {
+				(*target).FieldByName(field.Name).Set(reflect.ValueOf(s))
+			}
+		}
+	}
+
+}
+
+func GetSqlNullTypeValue(p interface{}) interface{} {
+	if p == nil {
+		return nil
+	}
+	if reflect.ValueOf(p).IsZero() {
+		return nil
+	}
+	switch p1 := p.(type) {
+	case *sql.NullString:
+		return p1.String
+	case *sql.NullInt64:
+		return p1.Int64
+	case *sql.NullInt32:
+		return int(p1.Int32)
+	case *sql.NullFloat64:
+		return p1.Float64
+	case *sql.NullTime:
+		return p1.Time
+	case *sql.NullBool:
+		return p1.Bool
+	}
+	return nil
 }

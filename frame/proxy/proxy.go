@@ -319,22 +319,3 @@ func GetCamelCaseName(str string) string {
 	}
 	return strings.Join(st, "")
 }
-
-// SetStructFieldValue target 目标对象  name fieldname value 值所对应的指针
-func SetStructFieldValue(target *reflect.Value, name string, value interface{}) {
-	switch reflect.ValueOf(value).Elem().Kind() {
-	case reflect.String:
-		s := value.(*string)
-		(*target).FieldByName(name).Set(reflect.ValueOf(*s))
-	case reflect.Int64:
-		s := value.(*int64)
-		(*target).FieldByName(name).Set(reflect.ValueOf(*s))
-	case reflect.Int:
-		s := value.(*int)
-		(*target).FieldByName(name).Set(reflect.ValueOf(*s))
-	case reflect.Float64:
-		s := value.(*float64)
-		(*target).FieldByName(name).Set(reflect.ValueOf(*s))
-	}
-
-}
