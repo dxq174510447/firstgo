@@ -9,34 +9,129 @@ import (
 	"testing"
 )
 
-func TestName(t *testing.T) {
+func printRow(v *po.Users) {
+	fmt.Println("-->",
+		v.Id,
+		dbcore.GetSqlNullTypeValue(v.Name),
+		dbcore.GetSqlNullTypeValue(v.Password),
+		dbcore.GetSqlNullTypeValue(v.Status),
+		dbcore.GetSqlNullTypeValue(v.Fee),
+		dbcore.GetSqlNullTypeValue(v.FeeStatus),
+		dbcore.GetSqlNullTypeValue(v.CreateDate),
+		dbcore.GetSqlNullTypeValue(v.CreateTime))
+}
+
+func TestUsersDao_FindIds(t *testing.T) {
 	local := context.NewLocalStack()
-	//m1, err1 := GetUsersDao().Find1(local)
-	//fmt.Println(m1, err1)
-	//m2, err2 := GetUsersDao().Find2(local, 123)
-	//fmt.Println(m2, err2)
-	//m3, err3 := GetUsersDao().Find3(local, 123, "456")
-	//fmt.Println(m3, err3)
-	//m4, err4 := GetUsersDao().Find4(local, &po.Users{Id: 4, Name: "haha", Status: 4})
-	//fmt.Println(m4, err4)
-	m5, err5 := GetUsersDao().Find5(local, &po.Users{Id: 94}, 123)
+
+	m5, err5 := GetUsersDao().FindIds(local, &po.Users{})
 	if err5 != nil {
 		fmt.Println(err5)
 		panic(err5)
 	} else {
 		if len(m5) > 0 {
 			for _, v := range m5 {
-				fmt.Println("-->", dbcore.GetSqlNullTypeValue(v.Password),
-					dbcore.GetSqlNullTypeValue(v.Status),
-					dbcore.GetSqlNullTypeValue(v.Fee),
-					dbcore.GetSqlNullTypeValue(v.CreateTime),
-					dbcore.GetSqlNullTypeValue(v.CreateDate))
+				fmt.Println(v)
+			}
+
+		} else {
+			fmt.Println("result length 0")
+		}
+	}
+}
+
+func TestUsersDao_FindNames(t *testing.T) {
+	local := context.NewLocalStack()
+
+	m5, err5 := GetUsersDao().FindNames(local, &po.Users{})
+	if err5 != nil {
+		fmt.Println(err5)
+		panic(err5)
+	} else {
+		if len(m5) > 0 {
+			for _, v := range m5 {
+				fmt.Println(v)
 			}
 		} else {
 			fmt.Println("result length 0")
 		}
 	}
-	//m6, err6 := GetUsersDao().Find6(local, &po.Users{Id: 4, Name: "haha4", Status: 4}, &po.Users{Id: 5, Name: "haha", Status: 5})
-	//fmt.Println(m6, err6)
+}
+
+func TestUsersDao_FindFees(t *testing.T) {
+	local := context.NewLocalStack()
+
+	m5, err5 := GetUsersDao().FindFees_(local, &po.Users{})
+	if err5 != nil {
+		fmt.Println(err5)
+		panic(err5)
+	} else {
+		if len(m5) > 0 {
+			for _, v := range m5 {
+				fmt.Println(v)
+			}
+		} else {
+			fmt.Println("result length 0")
+		}
+	}
+}
+
+func TestUsersDao_GetMaxFees(t *testing.T) {
+	local := context.NewLocalStack()
+
+	m5, err5 := GetUsersDao().GetMaxFees(local, &po.Users{})
+	if err5 != nil {
+		fmt.Println(err5)
+		panic(err5)
+	} else {
+		fmt.Println(m5)
+	}
+}
+
+func TestUsersDao_GetMaxId(t *testing.T) {
+	local := context.NewLocalStack()
+
+	m5, err5 := GetUsersDao().GetMaxId(local, &po.Users{})
+	if err5 != nil {
+		fmt.Println(err5)
+		panic(err5)
+	} else {
+		fmt.Println(m5)
+	}
+}
+
+func TestUsersDao_GetById(t *testing.T) {
+	local := context.NewLocalStack()
+
+	m5, err5 := GetUsersDao().GetById(local, 94)
+	if err5 != nil {
+		fmt.Println(err5)
+		panic(err5)
+	} else {
+		if m5 != nil {
+			printRow(m5)
+		} else {
+			fmt.Println("no row")
+		}
+
+	}
+}
+
+func TestUsersDao_FindByNameAndStatus(t *testing.T) {
+	local := context.NewLocalStack()
+
+	m5, err5 := GetUsersDao().FindByNameAndStatus(local, "w1322", 1)
+	if err5 != nil {
+		fmt.Println(err5)
+		panic(err5)
+	} else {
+		if len(m5) > 0 {
+			for _, v := range m5 {
+				printRow(v)
+			}
+		} else {
+			fmt.Println("result length 0")
+		}
+	}
 
 }

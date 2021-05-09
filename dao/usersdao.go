@@ -10,12 +10,13 @@ import (
 
 type UsersDao struct {
 	Proxy_               *proxy.ProxyClass
-	Find1_               func(local *context.LocalStack) (int, error)
-	Find2_               func(local *context.LocalStack, status int) (int, error)
-	Find3_               func(local *context.LocalStack, status int, name string) (int, error)
-	Find4_               func(local *context.LocalStack, user *po.Users) (int, error)
-	Find5_               func(local *context.LocalStack, user *po.Users, status int) ([]*po.Users, error)
-	Find6_               func(local *context.LocalStack, user *po.Users, user1 *po.Users) (int, error)
+	GetById_             func(local *context.LocalStack, id int) (*po.Users, error)
+	FindByNameAndStatus_ func(local *context.LocalStack, name string, status int) ([]*po.Users, error)
+	FindIds_             func(local *context.LocalStack, users *po.Users) ([]int, error)
+	FindNames_           func(local *context.LocalStack, users *po.Users) ([]string, error)
+	FindFees_            func(local *context.LocalStack, users *po.Users) ([]float64, error)
+	GetMaxFees_          func(local *context.LocalStack, users *po.Users) (float64, error)
+	GetMaxId_            func(local *context.LocalStack, users *po.Users) (int, error)
 	Save_                func(local *context.LocalStack, data *po.Users, self *UsersDao) int
 	Update_              func(local *context.LocalStack, data *po.Users, self *UsersDao) int
 	Delete_              func(local *context.LocalStack, id int, self *UsersDao) int
@@ -30,23 +31,28 @@ func (c *UsersDao) Save(local *context.LocalStack, data *po.Users) int {
 	return c.Save_(local, data, c)
 }
 
-func (c *UsersDao) Find1(local *context.LocalStack) (int, error) {
-	return c.Find1_(local)
+func (c *UsersDao) GetById(local *context.LocalStack, id int) (*po.Users, error) {
+	return c.GetById_(local, id)
 }
-func (c *UsersDao) Find2(local *context.LocalStack, status int) (int, error) {
-	return c.Find2_(local, status)
+
+func (c *UsersDao) FindByNameAndStatus(local *context.LocalStack, name string, status int) ([]*po.Users, error) {
+	return c.FindByNameAndStatus_(local, name, status)
 }
-func (c *UsersDao) Find3(local *context.LocalStack, status int, name string) (int, error) {
-	return c.Find3_(local, status, name)
+
+func (c *UsersDao) FindIds(local *context.LocalStack, users *po.Users) ([]int, error) {
+	return c.FindIds_(local, users)
 }
-func (c *UsersDao) Find4(local *context.LocalStack, user *po.Users) (int, error) {
-	return c.Find4_(local, user)
+func (c *UsersDao) FindNames(local *context.LocalStack, users *po.Users) ([]string, error) {
+	return c.FindNames_(local, users)
 }
-func (c *UsersDao) Find5(local *context.LocalStack, user *po.Users, status int) ([]*po.Users, error) {
-	return c.Find5_(local, user, status)
+func (c *UsersDao) FindFees(local *context.LocalStack, users *po.Users) ([]float64, error) {
+	return c.FindFees_(local, users)
 }
-func (c *UsersDao) Find6(local *context.LocalStack, user *po.Users, user1 *po.Users) (int, error) {
-	return c.Find6_(local, user, user1)
+func (c *UsersDao) GetMaxFees(local *context.LocalStack, users *po.Users) (float64, error) {
+	return c.GetMaxFees_(local, users)
+}
+func (c *UsersDao) GetMaxId(local *context.LocalStack, users *po.Users) (int, error) {
+	return c.GetMaxId_(local, users)
 }
 
 func (c *UsersDao) Update(local *context.LocalStack, data *po.Users) int {
@@ -86,23 +92,12 @@ var usersDao UsersDao = UsersDao{
 		Annotations: proxy.NewSingleAnnotation(proxy.AnnotationDao, nil),
 		Methods: []*proxy.ProxyMethod{
 			&proxy.ProxyMethod{
-				Name:        "Find2",
-				Annotations: dbcore.NewSqlProvierConfigAnnotation("_,status"),
+				Name:        "GetById",
+				Annotations: dbcore.NewSqlProvierConfigAnnotation("_,id"),
 			},
 			&proxy.ProxyMethod{
-				Name:        "Find3",
-				Annotations: dbcore.NewSqlProvierConfigAnnotation("_,status,name"),
-			},
-			&proxy.ProxyMethod{
-				Name:        "Find4",
-				Annotations: dbcore.NewSqlProvierConfigAnnotation("_,_"),
-			},
-			&proxy.ProxyMethod{
-				Name:        "Find5",
-				Annotations: dbcore.NewSqlProvierConfigAnnotation("_,user,status"),
-			}, &proxy.ProxyMethod{
-				Name:        "Find6",
-				Annotations: dbcore.NewSqlProvierConfigAnnotation("_,user,user1"),
+				Name:        "FindByNameAndStatus",
+				Annotations: dbcore.NewSqlProvierConfigAnnotation("_,name,status"),
 			},
 		},
 	},

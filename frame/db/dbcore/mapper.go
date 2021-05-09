@@ -253,7 +253,7 @@ func (s *sqlInvoke) invokeSelect(local *context.LocalStack, args []reflect.Value
 		sql = newsql
 	}
 	fmt.Printf("Sql[%s]: %s \n", sqlEle.Id, sql)
-	fmt.Printf("Paramters[%s]: %s \n", sqlEle.Id, sqlParam)
+	fmt.Printf("Paramters[%s]: %s \n", sqlEle.Id, GetSqlParamterStri(sqlParam))
 	stmt, err := con.Con.PrepareContext(con.Ctx, sql)
 	if err != nil {
 		if errorFlag == 0 {
@@ -274,8 +274,9 @@ func (s *sqlInvoke) invokeSelect(local *context.LocalStack, args []reflect.Value
 	case reflect.Slice:
 		queryResult, queryError = s.selectList(stmt, sqlParam, errorFlag)
 	case reflect.Ptr:
-		//queryResult,queryError = s.selectRow(stmt,sqlParam,errorFlag)
-		fmt.Println("1")
+		queryResult, queryError = s.selectRow(stmt, sqlParam, errorFlag)
+	case reflect.Int, reflect.Int64, reflect.Float64:
+		queryResult, queryError = s.selectRow(stmt, sqlParam, errorFlag)
 	default:
 		fmt.Println("2")
 	}
@@ -375,21 +376,6 @@ func (s *sqlInvoke) selectList(stmt *sql.Stmt, param []interface{}, errorFlag in
 	current := reflect.MakeSlice(s.returnSqlType, 0, pageSize)
 	currentCount := 0
 
-	//test
-	//r1, e1 := result.ColumnTypes()
-	//if e1 == nil {
-	//	for _, r11 := range r1 {
-	//		fmt.Println(r11)
-	//	}
-	//}
-	//
-	//r2, e2 := result.Columns()
-	//if e2 == nil {
-	//	for _, r11 := range r2 {
-	//		fmt.Println(r11)
-	//	}
-	//}
-
 	if s.sqlFieldMap == nil {
 		r1, e1 := result.ColumnTypes()
 		if e1 == nil {
@@ -401,6 +387,8 @@ func (s *sqlInvoke) selectList(stmt *sql.Stmt, param []interface{}, errorFlag in
 			s.sqlFieldMap = sts
 		}
 	}
+
+	fmt.Printf("column列类型 %s \n", GetSqlColumnType(s.sqlFieldMap))
 
 	for result.Next() {
 		if queryCount != 0 && currentCount >= pageSize {
@@ -417,7 +405,7 @@ func (s *sqlInvoke) selectList(stmt *sql.Stmt, param []interface{}, errorFlag in
 				return nil, err2
 			}
 		}
-
+		//fmt.Println(r1.Interface())
 		current = reflect.Append(current, *r1)
 
 		queryCount++
@@ -431,23 +419,65 @@ func (s *sqlInvoke) selectList(stmt *sql.Stmt, param []interface{}, errorFlag in
 	return &total, nil
 }
 
-func (s *sqlInvoke) selectRow(stmt *sql.Stmt, param []interface{}, errorFlag int) *reflect.Value {
-	return nil
+func (s *sqlInvoke) selectRow(stmt *sql.Stmt, param []interface{}, errorFlag int) (*reflect.Value, error) {
+	result, err1 := stmt.Query(param...)
+	if err1 != nil {
+		if errorFlag == 0 {
+			panic(err1)
+		} else {
+			return nil, err1
+		}
+	}
+	defer func() {
+		if result != nil {
+			result.Close() //可以关闭掉未scan连接一直占用
+		}
+	}()
+
+	if s.sqlFieldMap == nil {
+		r1, e1 := result.ColumnTypes()
+		if e1 == nil {
+			sts := make([]*sqlColumnType, len(r1), len(r1))
+			for k, ct := range r1 {
+				var m1 *sqlColumnType = s.coverToGoType(ct)
+				sts[k] = m1
+			}
+			s.sqlFieldMap = sts
+		}
+	}
+
+	fmt.Printf("column列类型 %s \n", GetSqlColumnType(s.sqlFieldMap))
+
+	if result.Next() {
+		r1, err2 := s.scanRow(result)
+		if err2 != nil {
+			if errorFlag == 0 {
+				panic(err2)
+			} else {
+				return nil, err2
+			}
+		}
+		return r1, nil
+	} else {
+		return s.defaultReturnValue, nil
+	}
 }
 
 func (s *sqlInvoke) scanRow(result *sql.Rows) (*reflect.Value, error) {
 	valueptr := make([]interface{}, len(s.sqlFieldMap), len(s.sqlFieldMap))
 	for k, v := range s.sqlFieldMap {
 		d1 := GetSqlFieldReturnDefaultValue(v.defaultType)
-		fmt.Println(v.field.Name, v.defaultType.Kind(), reflect.ValueOf(d1).Elem().Kind())
+		//fmt.Println(v.field.Name, v.defaultType.Kind(), reflect.ValueOf(d1).Elem().Kind())
 		valueptr[k] = d1
 	}
 	e1 := result.Scan(valueptr...) //不scan会导致连接不释放
 	if e1 != nil {
 		return nil, e1
 	}
+	//fmt.Println(valueptr[0])
 	var result1 *reflect.Value
-	if s.returnSqlElementType.Kind() == reflect.Struct {
+	switch s.returnSqlElementType.Kind() {
+	case reflect.Struct:
 		hp := reflect.New(s.returnSqlElementType)
 		hv := hp.Elem()
 		for k, v := range s.sqlFieldMap {
@@ -456,6 +486,14 @@ func (s *sqlInvoke) scanRow(result *sql.Rows) (*reflect.Value, error) {
 			}
 		}
 		result1 = &hp
+	case reflect.String, reflect.Int, reflect.Int64, reflect.Float64:
+		hp := GetRowColumnValue(s.sqlFieldMap[0].defaultType, valueptr[0])
+		if hp == nil {
+			zv := reflect.Zero(s.returnSqlElementType)
+			result1 = &zv
+		} else {
+			result1 = hp
+		}
 	}
 	return result1, nil
 }
@@ -473,7 +511,7 @@ func (s *sqlInvoke) coverToGoType(ct *sql.ColumnType) *sqlColumnType {
 			result.defaultType = field.Type
 		}
 	}
-	fmt.Println(result.column.Name(), result.field.Type)
+	//fmt.Println(result.column.Name(), result.field.Type)
 	if addDefaultType {
 		databasetype := strings.ToLower(ct.DatabaseTypeName())
 		if strings.Index(databasetype, "int") >= 0 {
@@ -677,66 +715,148 @@ func GetSqlFieldReturnDefaultValue(rtType reflect.Type) interface{} {
 	}
 }
 
-// SetEntityFieldValue target 目标对象  name fieldname value sql.null* 的指针
-// 如果value指针对应的是struct 根据ptr来判断是否是指针类型
-func SetEntityFieldValue(target *reflect.Value, field *reflect.StructField, value interface{}) {
-	switch field.Type.Kind() {
+// GetRowColumnValue 将查询出来的column值转换成golang类型 value sql.null* 的指针
+// 如果go类型是基础类型或者string 如果没有值就返回nil， 如果返回都是指针 那么只能用于struct里面的field
+func GetRowColumnValue(ty reflect.Type, value interface{}) *reflect.Value {
+	switch ty.Kind() {
 	case reflect.String:
 		s := value.(*sql.NullString)
 		if s.Valid {
-			(*target).FieldByName(field.Name).Set(reflect.ValueOf(s.String))
+			n := reflect.ValueOf(s.String)
+			return &n
+		} else {
+			return nil
 		}
 	case reflect.Int64:
 		s := value.(*sql.NullInt64)
 		if s.Valid {
-			(*target).FieldByName(field.Name).Set(reflect.ValueOf(s.Int64))
+			n := reflect.ValueOf(s.Int64)
+			return &n
+		} else {
+			return nil
 		}
 	case reflect.Int:
 		s := value.(*sql.NullInt32)
 		if s.Valid {
-			(*target).FieldByName(field.Name).Set(reflect.ValueOf(int(s.Int32)))
+			n := reflect.ValueOf(int(s.Int32))
+			return &n
+		} else {
+			return nil
 		}
 	case reflect.Float64:
 		s := value.(*sql.NullFloat64)
 		if s.Valid {
-			(*target).FieldByName(field.Name).Set(reflect.ValueOf(s.Float64))
+			n := reflect.ValueOf(s.Float64)
+			return &n
+		} else {
+			return nil
 		}
 	case reflect.Ptr:
 		//fix field is *Time ,same as ptr
-		eleType := field.Type.Elem()
+		eleType := ty.Elem()
 		if eleType == GoTimeType {
 			s := value.(*sql.NullTime)
 			if s.Valid {
-				(*target).FieldByName(field.Name).Set(reflect.ValueOf(&(s.Time)))
+				n := reflect.ValueOf(&(s.Time))
+				return &n
 			}
-		} else if eleType == SqlNullStringType {
-			s := value.(*sql.NullString)
-			if s.Valid {
-				(*target).FieldByName(field.Name).Set(reflect.ValueOf(s))
-			}
-		} else if eleType == SqlNullTimeType {
-			s := value.(*sql.NullTime)
-			if s.Valid {
-				(*target).FieldByName(field.Name).Set(reflect.ValueOf(s))
-			}
-		} else if eleType == SqlNullInt64Type {
-			s := value.(*sql.NullInt64)
-			if s.Valid {
-				(*target).FieldByName(field.Name).Set(reflect.ValueOf(s))
-			}
-		} else if eleType == SqlNullInt32Type {
-			s := value.(*sql.NullInt32)
-			if s.Valid {
-				(*target).FieldByName(field.Name).Set(reflect.ValueOf(s))
-			}
-		} else if eleType == SqlNullFloat64Type {
-			s := value.(*sql.NullFloat64)
-			if s.Valid {
-				(*target).FieldByName(field.Name).Set(reflect.ValueOf(s))
+		} else {
+			switch p1 := value.(type) {
+			case *sql.NullString:
+				if p1.Valid {
+					n := reflect.ValueOf(p1)
+					return &n
+				}
+			case *sql.NullTime:
+				if p1.Valid {
+					n := reflect.ValueOf(p1)
+					return &n
+				}
+			case *sql.NullInt64:
+				if p1.Valid {
+					n := reflect.ValueOf(p1)
+					return &n
+				}
+			case *sql.NullInt32:
+				if p1.Valid {
+					n := reflect.ValueOf(p1)
+					return &n
+				}
+			case *sql.NullFloat64:
+				if p1.Valid {
+					n := reflect.ValueOf(p1)
+					return &n
+				}
 			}
 		}
+		return nil
 	}
+	panic(fmt.Errorf("%s 找不到对应处理类型", ty.String()))
+}
 
+// SetEntityFieldValue target 目标对象  name fieldname value sql.null* 的指针
+// 如果value指针对应的是struct 根据ptr来判断是否是指针类型
+func SetEntityFieldValue(target *reflect.Value, field *reflect.StructField, value interface{}) {
+	rv := GetRowColumnValue(field.Type, value)
+	if rv != nil {
+		(*target).FieldByName(field.Name).Set(*rv)
+	}
+	//switch field.Type.Kind() {
+	//case reflect.String:
+	//	s := value.(*sql.NullString)
+	//	if s.Valid {
+	//		(*target).FieldByName(field.Name).Set(reflect.ValueOf(s.String))
+	//	}
+	//case reflect.Int64:
+	//	s := value.(*sql.NullInt64)
+	//	if s.Valid {
+	//		(*target).FieldByName(field.Name).Set(reflect.ValueOf(s.Int64))
+	//	}
+	//case reflect.Int:
+	//	s := value.(*sql.NullInt32)
+	//	if s.Valid {
+	//		(*target).FieldByName(field.Name).Set(reflect.ValueOf(int(s.Int32)))
+	//	}
+	//case reflect.Float64:
+	//	s := value.(*sql.NullFloat64)
+	//	if s.Valid {
+	//		(*target).FieldByName(field.Name).Set(reflect.ValueOf(s.Float64))
+	//	}
+	//case reflect.Ptr:
+	//	//fix field is *Time ,same as ptr
+	//	eleType := field.Type.Elem()
+	//	if eleType == GoTimeType {
+	//		s := value.(*sql.NullTime)
+	//		if s.Valid {
+	//			(*target).FieldByName(field.Name).Set(reflect.ValueOf(&(s.Time)))
+	//		}
+	//	} else if eleType == SqlNullStringType {
+	//		s := value.(*sql.NullString)
+	//		if s.Valid {
+	//			(*target).FieldByName(field.Name).Set(reflect.ValueOf(s))
+	//		}
+	//	} else if eleType == SqlNullTimeType {
+	//		s := value.(*sql.NullTime)
+	//		if s.Valid {
+	//			(*target).FieldByName(field.Name).Set(reflect.ValueOf(s))
+	//		}
+	//	} else if eleType == SqlNullInt64Type {
+	//		s := value.(*sql.NullInt64)
+	//		if s.Valid {
+	//			(*target).FieldByName(field.Name).Set(reflect.ValueOf(s))
+	//		}
+	//	} else if eleType == SqlNullInt32Type {
+	//		s := value.(*sql.NullInt32)
+	//		if s.Valid {
+	//			(*target).FieldByName(field.Name).Set(reflect.ValueOf(s))
+	//		}
+	//	} else if eleType == SqlNullFloat64Type {
+	//		s := value.(*sql.NullFloat64)
+	//		if s.Valid {
+	//			(*target).FieldByName(field.Name).Set(reflect.ValueOf(s))
+	//		}
+	//	}
+	//}
 }
 
 func GetSqlNullTypeValue(p interface{}) interface{} {
@@ -760,5 +880,28 @@ func GetSqlNullTypeValue(p interface{}) interface{} {
 	case *sql.NullBool:
 		return p1.Bool
 	}
-	return nil
+	return p
+}
+
+func GetSqlParamterStri(values []interface{}) string {
+	if len(values) == 0 {
+		return ""
+	}
+	var result strings.Builder
+	for _, v := range values {
+		result.WriteString(fmt.Sprint(v))
+		result.WriteString(" ")
+	}
+	return result.String()
+}
+func GetSqlColumnType(values []*sqlColumnType) string {
+	if len(values) == 0 {
+		return ""
+	}
+	var result strings.Builder
+	for _, v := range values {
+		result.WriteString(fmt.Sprintf("column %s %s fieldType %s", v.column.Name(), v.column.DatabaseTypeName(), v.defaultType.String()))
+		result.WriteString(" ")
+	}
+	return result.String()
 }

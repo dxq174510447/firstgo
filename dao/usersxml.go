@@ -4,28 +4,35 @@ const UsersXml = `
 
 <?xml version="1.0" encoding="UTF-8" ?>
 <mapper>
-	<select id="Find1">
-			select * from users 
-			where status = 1
+	<select id="GetById">
+			select * from users where id = #{id}
 	</select>
-	<select id="Find2">
-			select * from users where  status = #{status}
-	</select>
-	<select id="Find3">
-			select * from users where status = #{status} and name = #{name}
-	</select>
-	<select id="Find4">
-			select * from users where id = #{Id} and status = #{Status}
-	</select>
-	<select id="Find5">
-			select id,name,password,status,fee,fee_status,fee_total,create_date,create_time from users where id >= 90 order by id desc
-	</select>
-	<select id="Find6">
-			select * from users where 
-			id = #{user.Id} 
- 			and status = #{user1.Status}
+	
+	<select id="FindByNameAndStatus">
+			select * from users where name = #{name} and status = #{status}  order by id desc 
 	</select>
 
+	<select id="FindIds">
+			select id from users order by id desc 
+	</select>
+
+	<select id="FindNames">
+			select distinct name from users order by id desc 
+	</select>
+
+	<select id="FindFees">
+			select distinct fee from users  order by id desc 
+	</select>
+	
+	<select id="GetMaxFees">
+			select max(fee)  from users 
+	</select>
+
+	<select id="GetMaxId">
+			select max(id)  from users 
+	</select>
+
+	
 </mapper>
 
 `
