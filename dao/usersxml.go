@@ -73,6 +73,17 @@ const UsersXml = `
 			)
 		{{end}}
 	</delete>
+
+	<insert id="InsertSingle">
+		insert into users(name,password) values (#{Name},#{Password}) 
+	</insert>
+
+	<insert id="InsertBatch">
+		insert into users(name,password) values 
+		{{range $index, $ele := .values}}
+		{{if $index}},{{end}}(#{values[{{$index}}].Name},#{values[{{$index}}].Password})
+		{{end}}
+	</insert>
 	
 </mapper>
 

@@ -21,6 +21,8 @@ type UsersDao struct {
 	UpdateNameByEntity_  func(local *context.LocalStack, users *po.Users) (int, error)
 	DeleteNameByField_   func(local *context.LocalStack, name string, id int) (int, error)
 	DeleteNameByEntity_  func(local *context.LocalStack, users *po.Users) (int, error)
+	InsertSingle_        func(local *context.LocalStack, users *po.Users) (int, error)
+	InsertBatch_         func(local *context.LocalStack, users []*po.Users) (int, error)
 	Save_                func(local *context.LocalStack, data *po.Users, self *UsersDao) int
 	Update_              func(local *context.LocalStack, data *po.Users, self *UsersDao) int
 	Delete_              func(local *context.LocalStack, id int, self *UsersDao) int
@@ -69,6 +71,12 @@ func (c *UsersDao) DeleteNameByField(local *context.LocalStack, name string, id 
 }
 func (c *UsersDao) DeleteNameByEntity(local *context.LocalStack, users *po.Users) (int, error) {
 	return c.DeleteNameByEntity_(local, users)
+}
+func (c *UsersDao) InsertSingle(local *context.LocalStack, users *po.Users) (int, error) {
+	return c.InsertSingle_(local, users)
+}
+func (c *UsersDao) InsertBatch(local *context.LocalStack, users []*po.Users) (int, error) {
+	return c.InsertBatch_(local, users)
 }
 
 func (c *UsersDao) Update(local *context.LocalStack, data *po.Users) int {
@@ -144,6 +152,19 @@ var usersDao UsersDao = UsersDao{
 			&proxy.ProxyMethod{
 				Name: "DeleteNameByEntity",
 				Annotations: []*proxy.AnnotationClass{
+					proxy.NewSingleAnnotation(dbcore.TransactionRequire, nil),
+				},
+			},
+			&proxy.ProxyMethod{
+				Name: "InsertSingle",
+				Annotations: []*proxy.AnnotationClass{
+					proxy.NewSingleAnnotation(dbcore.TransactionRequire, nil),
+				},
+			},
+			&proxy.ProxyMethod{
+				Name: "InsertBatch",
+				Annotations: []*proxy.AnnotationClass{
+					dbcore.NewSqlProvierConfigAnnotation("_,values"),
 					proxy.NewSingleAnnotation(dbcore.TransactionRequire, nil),
 				},
 			},

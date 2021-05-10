@@ -160,7 +160,7 @@ func ATestUsersDao_UpdateNameByField(t *testing.T) {
 	}
 }
 
-func TestUsersDao_DeleteNameByEntity(t *testing.T) {
+func ATestUsersDao_DeleteNameByEntity(t *testing.T) {
 	local := context.NewLocalStack()
 
 	m5, err5 := GetUsersDao().DeleteNameByEntity(local, &po.Users{Id: 93, Name: "xxxx1", NameIn: []string{"aaa", "bbb"}})
@@ -172,10 +172,38 @@ func TestUsersDao_DeleteNameByEntity(t *testing.T) {
 	}
 }
 
-func TestUsersDao_DeleteNameByField(t *testing.T) {
+func ATestUsersDao_DeleteNameByField(t *testing.T) {
 	local := context.NewLocalStack()
 
 	m5, err5 := GetUsersDao().DeleteNameByField(local, "xxxx2", 94)
+	if err5 != nil {
+		fmt.Println(err5)
+		panic(err5)
+	} else {
+		fmt.Println("result", m5)
+	}
+}
+
+func TestUsersDao_InsertSingle(t *testing.T) {
+	local := context.NewLocalStack()
+
+	m5, err5 := GetUsersDao().InsertSingle(local, &po.Users{Name: "nnn1", Password: "ppp1"})
+	if err5 != nil {
+		fmt.Println(err5)
+		panic(err5)
+	} else {
+		fmt.Println("result", m5)
+	}
+}
+
+func TestUsersDao_InsertBatch(t *testing.T) {
+	local := context.NewLocalStack()
+
+	m5, err5 := GetUsersDao().InsertBatch(local, []*po.Users{
+		{Name: "nnn2", Password: "ppp2"},
+		{Name: "nnn3", Password: "ppp3"},
+		{Name: "nnn4", Password: "ppp4"},
+	})
 	if err5 != nil {
 		fmt.Println(err5)
 		panic(err5)
