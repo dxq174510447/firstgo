@@ -67,31 +67,45 @@ func (c *UsersController) ProxyTarget() *proxy.ProxyClass {
 // UsersControllerImpl 控制器单例
 var userController UsersController = UsersController{
 	Proxy_: &proxy.ProxyClass{
-		Annotations: http.NewRestAnnotation("/v1/users", "", "", ""),
+		Annotations: []*proxy.AnnotationClass{
+			http.NewRestAnnotation("/v1/users", "", "", ""),
+		},
 		Methods: []*proxy.ProxyMethod{
 			&proxy.ProxyMethod{
-				Name:        "Save",
-				Annotations: http.NewRestAnnotation("/", "post", "", ""),
+				Name: "Save",
+				Annotations: []*proxy.AnnotationClass{
+					http.NewRestAnnotation("/", "post", "", ""),
+				},
 			},
 			&proxy.ProxyMethod{
-				Name:        "Update",
-				Annotations: http.NewRestAnnotation("/", "put", "", ""),
+				Name: "Update",
+				Annotations: []*proxy.AnnotationClass{
+					http.NewRestAnnotation("/", "put", "", ""),
+				},
 			},
 			&proxy.ProxyMethod{
-				Name:        "Delete",
-				Annotations: http.NewRestAnnotation("/", "delete", "_,id", ""),
+				Name: "Delete",
+				Annotations: []*proxy.AnnotationClass{
+					http.NewRestAnnotation("/", "delete", "_,id", ""),
+				},
 			},
 			&proxy.ProxyMethod{
-				Name:        "Get",
-				Annotations: http.NewRestAnnotation("/", "get", "_,id", ""),
+				Name: "Get",
+				Annotations: []*proxy.AnnotationClass{
+					http.NewRestAnnotation("/", "get", "_,id", ""),
+				},
 			},
 			&proxy.ProxyMethod{
-				Name:        "List",
-				Annotations: http.NewRestAnnotation("/list", "post", "", ""),
+				Name: "List",
+				Annotations: []*proxy.AnnotationClass{
+					http.NewRestAnnotation("/list", "post", "", ""),
+				},
 			},
 			&proxy.ProxyMethod{
-				Name:        "ChangeStatus",
-				Annotations: http.NewRestAnnotation("/change/status", "post", "_,id,status", ""),
+				Name: "ChangeStatus",
+				Annotations: []*proxy.AnnotationClass{
+					http.NewRestAnnotation("/change/status", "post", "_,id,status", ""),
+				},
 			},
 		},
 	},

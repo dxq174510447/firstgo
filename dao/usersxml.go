@@ -53,6 +53,26 @@ const UsersXml = `
 			select max(id)  from users 
 	</select>
 
+	<update id="UpdateNameByField">
+		update users set name = #{name} where id = #{id}
+	</update>
+
+	<update id="UpdateNameByEntity">
+		update users set name = #{Name} where id = #{Id}
+	</update>
+
+	<delete id="DeleteNameByField">
+		delete from users where name = #{name} and id = #{id}
+	</delete>
+
+	<delete id="DeleteNameByEntity">
+		delete from users where name = #{Name} and id = #{Id} 
+		{{if .NameIn}}
+			and name in (
+				{{range $index, $ele := $.NameIn}}{{if $index}},{{end}}#{NameIn[{{$index}}]}{{end}}
+			)
+		{{end}}
+	</delete>
 	
 </mapper>
 

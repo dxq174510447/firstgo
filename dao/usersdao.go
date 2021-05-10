@@ -17,6 +17,10 @@ type UsersDao struct {
 	FindFees_            func(local *context.LocalStack, users *po.Users) ([]float64, error)
 	GetMaxFees_          func(local *context.LocalStack, users *po.Users) (float64, error)
 	GetMaxId_            func(local *context.LocalStack, users *po.Users) (int, error)
+	UpdateNameByField_   func(local *context.LocalStack, name string, id int) (int, error)
+	UpdateNameByEntity_  func(local *context.LocalStack, users *po.Users) (int, error)
+	DeleteNameByField_   func(local *context.LocalStack, name string, id int) (int, error)
+	DeleteNameByEntity_  func(local *context.LocalStack, users *po.Users) (int, error)
 	Save_                func(local *context.LocalStack, data *po.Users, self *UsersDao) int
 	Update_              func(local *context.LocalStack, data *po.Users, self *UsersDao) int
 	Delete_              func(local *context.LocalStack, id int, self *UsersDao) int
@@ -54,6 +58,18 @@ func (c *UsersDao) GetMaxFees(local *context.LocalStack, users *po.Users) (float
 func (c *UsersDao) GetMaxId(local *context.LocalStack, users *po.Users) (int, error) {
 	return c.GetMaxId_(local, users)
 }
+func (c *UsersDao) UpdateNameByField(local *context.LocalStack, name string, id int) (int, error) {
+	return c.UpdateNameByField_(local, name, id)
+}
+func (c *UsersDao) UpdateNameByEntity(local *context.LocalStack, users *po.Users) (int, error) {
+	return c.UpdateNameByEntity_(local, users)
+}
+func (c *UsersDao) DeleteNameByField(local *context.LocalStack, name string, id int) (int, error) {
+	return c.DeleteNameByField_(local, name, id)
+}
+func (c *UsersDao) DeleteNameByEntity(local *context.LocalStack, users *po.Users) (int, error) {
+	return c.DeleteNameByEntity_(local, users)
+}
 
 func (c *UsersDao) Update(local *context.LocalStack, data *po.Users) int {
 	return c.Update_(local, data, c)
@@ -89,15 +105,47 @@ func (c *UsersDao) ProxyTarget() *proxy.ProxyClass {
 
 var usersDao UsersDao = UsersDao{
 	Proxy_: &proxy.ProxyClass{
-		Annotations: proxy.NewSingleAnnotation(proxy.AnnotationDao, nil),
+		Annotations: []*proxy.AnnotationClass{
+			proxy.NewSingleAnnotation(proxy.AnnotationDao, nil),
+		},
 		Methods: []*proxy.ProxyMethod{
 			&proxy.ProxyMethod{
-				Name:        "GetById",
-				Annotations: dbcore.NewSqlProvierConfigAnnotation("_,id"),
+				Name: "GetById",
+				Annotations: []*proxy.AnnotationClass{
+					dbcore.NewSqlProvierConfigAnnotation("_,id"),
+				},
 			},
 			&proxy.ProxyMethod{
-				Name:        "FindByNameAndStatus",
-				Annotations: dbcore.NewSqlProvierConfigAnnotation("_,name,status,statusList"),
+				Name: "FindByNameAndStatus",
+				Annotations: []*proxy.AnnotationClass{
+					dbcore.NewSqlProvierConfigAnnotation("_,name,status,statusList"),
+				},
+			},
+			&proxy.ProxyMethod{
+				Name: "UpdateNameByField",
+				Annotations: []*proxy.AnnotationClass{
+					dbcore.NewSqlProvierConfigAnnotation("_,name,id"),
+					proxy.NewSingleAnnotation(dbcore.TransactionRequire, nil),
+				},
+			},
+			&proxy.ProxyMethod{
+				Name: "UpdateNameByEntity",
+				Annotations: []*proxy.AnnotationClass{
+					proxy.NewSingleAnnotation(dbcore.TransactionRequire, nil),
+				},
+			},
+			&proxy.ProxyMethod{
+				Name: "DeleteNameByField",
+				Annotations: []*proxy.AnnotationClass{
+					dbcore.NewSqlProvierConfigAnnotation("_,name,id"),
+					proxy.NewSingleAnnotation(dbcore.TransactionRequire, nil),
+				},
+			},
+			&proxy.ProxyMethod{
+				Name: "DeleteNameByEntity",
+				Annotations: []*proxy.AnnotationClass{
+					proxy.NewSingleAnnotation(dbcore.TransactionRequire, nil),
+				},
 			},
 		},
 	},

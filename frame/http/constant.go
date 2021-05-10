@@ -51,17 +51,15 @@ func GetRequestAnnotationSetting(annotations []*proxy.AnnotationClass) *RestAnno
 func NewRestAnnotation(httpPath string,
 	httpMethod string,
 	methodParamter string,
-	methodRender string) []*proxy.AnnotationClass {
-	return []*proxy.AnnotationClass{
-		&proxy.AnnotationClass{
-			Name: AnnotationRestController,
-			Value: map[string]interface{}{
-				AnnotationValueRestKey: &RestAnnotationSetting{
-					HttpPath:       httpPath,
-					HttpMethod:     httpMethod,
-					MethodParamter: methodParamter,
-					MethodRender:   methodRender,
-				},
+	methodRender string) *proxy.AnnotationClass {
+	return &proxy.AnnotationClass{
+		Name: AnnotationRestController,
+		Value: map[string]interface{}{
+			AnnotationValueRestKey: &RestAnnotationSetting{
+				HttpPath:       httpPath,
+				HttpMethod:     httpMethod,
+				MethodParamter: methodParamter,
+				MethodRender:   methodRender,
 			},
 		},
 	}

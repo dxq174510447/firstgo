@@ -40,7 +40,7 @@ func ATestUsersDao_FindIds(t *testing.T) {
 	}
 }
 
-func TestUsersDao_FindNames(t *testing.T) {
+func ATestUsersDao_FindNames(t *testing.T) {
 	local := context.NewLocalStack()
 
 	m5, err5 := GetUsersDao().FindNames(local, &po.Users{NameIn: []string{"w1322", "w13a232"}})
@@ -61,7 +61,7 @@ func TestUsersDao_FindNames(t *testing.T) {
 func ATestUsersDao_FindFees(t *testing.T) {
 	local := context.NewLocalStack()
 
-	m5, err5 := GetUsersDao().FindFees_(local, &po.Users{})
+	m5, err5 := GetUsersDao().FindFees(local, &po.Users{})
 	if err5 != nil {
 		fmt.Println(err5)
 		panic(err5)
@@ -134,4 +134,52 @@ func ATestUsersDao_FindByNameAndStatus(t *testing.T) {
 		}
 	}
 
+}
+
+func ATestUsersDao_UpdateNameByEntity(t *testing.T) {
+	local := context.NewLocalStack()
+
+	m5, err5 := GetUsersDao().UpdateNameByEntity(local, &po.Users{Id: 93, Name: "xxxx1"})
+	if err5 != nil {
+		fmt.Println(err5)
+		panic(err5)
+	} else {
+		fmt.Println("result", m5)
+	}
+}
+
+func ATestUsersDao_UpdateNameByField(t *testing.T) {
+	local := context.NewLocalStack()
+
+	m5, err5 := GetUsersDao().UpdateNameByField(local, "xxxx2", 94)
+	if err5 != nil {
+		fmt.Println(err5)
+		panic(err5)
+	} else {
+		fmt.Println("result", m5)
+	}
+}
+
+func TestUsersDao_DeleteNameByEntity(t *testing.T) {
+	local := context.NewLocalStack()
+
+	m5, err5 := GetUsersDao().DeleteNameByEntity(local, &po.Users{Id: 93, Name: "xxxx1", NameIn: []string{"aaa", "bbb"}})
+	if err5 != nil {
+		fmt.Println(err5)
+		panic(err5)
+	} else {
+		fmt.Println("result", m5)
+	}
+}
+
+func TestUsersDao_DeleteNameByField(t *testing.T) {
+	local := context.NewLocalStack()
+
+	m5, err5 := GetUsersDao().DeleteNameByField(local, "xxxx2", 94)
+	if err5 != nil {
+		fmt.Println(err5)
+		panic(err5)
+	} else {
+		fmt.Println("result", m5)
+	}
 }

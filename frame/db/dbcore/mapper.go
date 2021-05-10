@@ -227,7 +227,6 @@ func (s *sqlInvoke) invokeSelect(local *context.LocalStack, args []reflect.Value
 	}
 
 	sql, err1 := s.getSqlFromTpl(local, args, sqlEle)
-	fmt.Printf("SourceSql[%s]: %s \n", sqlEle.Id, sql)
 	if err1 != nil {
 		if errorFlag == 0 {
 			panic(err1)
@@ -304,12 +303,173 @@ func (s *sqlInvoke) invokeSelect(local *context.LocalStack, args []reflect.Value
 
 }
 
-func (s *sqlInvoke) invokeUpdate(context *context.LocalStack, args []reflect.Value, sql *MapperElementXml) []reflect.Value {
-	return nil
+func (s *sqlInvoke) invokeUpdate(local *context.LocalStack, args []reflect.Value, sqlEle *MapperElementXml) []reflect.Value {
+	var nilError = reflect.Zero(reflect.TypeOf((*error)(nil)).Elem())
+
+	errorFlag := GetErrorHandleFlag(local) //0 panic 1 return
+	con := GetDbConnection(local)
+	if con == nil {
+		var errortip string = "上下文中找不到数据库链接"
+		if errorFlag == 0 {
+			panic(errortip)
+		} else {
+			var defaultError *DaoException = &DaoException{exception.FrameException{Code: 505, Message: errortip}}
+			if s.returnSqlType != nil {
+				return []reflect.Value{*s.defaultReturnValue, reflect.ValueOf(defaultError)}
+			} else {
+				return []reflect.Value{reflect.ValueOf(defaultError)}
+			}
+		}
+	}
+
+	sql, err1 := s.getSqlFromTpl(local, args, sqlEle)
+	if err1 != nil {
+		if errorFlag == 0 {
+			panic(err1)
+		} else {
+			if s.returnSqlType != nil {
+				return []reflect.Value{*s.defaultReturnValue, reflect.ValueOf(err1)}
+			} else {
+				return []reflect.Value{reflect.ValueOf(err1)}
+			}
+		}
+	}
+
+	sqlParam, newsql, err2 := s.getArgumentsFromSql(local, args, sql)
+	if err2 != nil {
+		if errorFlag == 0 {
+			panic(err2)
+		} else {
+			if s.returnSqlType != nil {
+				return []reflect.Value{*s.defaultReturnValue, reflect.ValueOf(err2)}
+			} else {
+				return []reflect.Value{reflect.ValueOf(err2)}
+			}
+		}
+	}
+	if newsql != "" {
+		sql = newsql
+	}
+	fmt.Printf("Sql[%s]: %s \n", sqlEle.Id, sql)
+	fmt.Printf("Paramters[%s]: %s \n", sqlEle.Id, GetSqlParamterStri(sqlParam))
+	stmt, err := con.Con.PrepareContext(con.Ctx, sql)
+	if err != nil {
+		if errorFlag == 0 {
+			panic(err)
+		} else {
+			if s.returnSqlType != nil {
+				return []reflect.Value{*s.defaultReturnValue, reflect.ValueOf(err)}
+			} else {
+				return []reflect.Value{reflect.ValueOf(err)}
+			}
+		}
+	}
+	defer stmt.Close()
+
+	sqlResult, err1 := stmt.Exec(sqlParam...)
+
+	if err1 != nil {
+		if errorFlag == 0 {
+			panic(err1)
+		} else {
+			if s.returnSqlType != nil {
+				return []reflect.Value{*s.defaultReturnValue, reflect.ValueOf(err1)}
+			} else {
+				return []reflect.Value{reflect.ValueOf(err1)}
+			}
+		}
+	}
+	if s.returnSqlType != nil {
+		r1, _ := sqlResult.RowsAffected()
+		return []reflect.Value{reflect.ValueOf(int(r1)), nilError}
+	} else {
+		return []reflect.Value{nilError}
+	}
 }
 
-func (s *sqlInvoke) invokeDelete(context *context.LocalStack, args []reflect.Value, sql *MapperElementXml) []reflect.Value {
-	return nil
+func (s *sqlInvoke) invokeDelete(local *context.LocalStack, args []reflect.Value, sqlEle *MapperElementXml) []reflect.Value {
+	var nilError = reflect.Zero(reflect.TypeOf((*error)(nil)).Elem())
+
+	errorFlag := GetErrorHandleFlag(local) //0 panic 1 return
+	con := GetDbConnection(local)
+	if con == nil {
+		var errortip string = "上下文中找不到数据库链接"
+		if errorFlag == 0 {
+			panic(errortip)
+		} else {
+			var defaultError *DaoException = &DaoException{exception.FrameException{Code: 505, Message: errortip}}
+			if s.returnSqlType != nil {
+				return []reflect.Value{*s.defaultReturnValue, reflect.ValueOf(defaultError)}
+			} else {
+				return []reflect.Value{reflect.ValueOf(defaultError)}
+			}
+		}
+	}
+
+	sql, err1 := s.getSqlFromTpl(local, args, sqlEle)
+	if err1 != nil {
+		if errorFlag == 0 {
+			panic(err1)
+		} else {
+			if s.returnSqlType != nil {
+				return []reflect.Value{*s.defaultReturnValue, reflect.ValueOf(err1)}
+			} else {
+				return []reflect.Value{reflect.ValueOf(err1)}
+			}
+		}
+	}
+
+	sqlParam, newsql, err2 := s.getArgumentsFromSql(local, args, sql)
+	if err2 != nil {
+		if errorFlag == 0 {
+			panic(err2)
+		} else {
+			if s.returnSqlType != nil {
+				return []reflect.Value{*s.defaultReturnValue, reflect.ValueOf(err2)}
+			} else {
+				return []reflect.Value{reflect.ValueOf(err2)}
+			}
+		}
+	}
+	if newsql != "" {
+		sql = newsql
+	}
+	fmt.Printf("Sql[%s]: %s \n", sqlEle.Id, sql)
+	fmt.Printf("Paramters[%s]: %s \n", sqlEle.Id, GetSqlParamterStri(sqlParam))
+	stmt, err := con.Con.PrepareContext(con.Ctx, sql)
+	if err != nil {
+		if errorFlag == 0 {
+			panic(err)
+		} else {
+			if s.returnSqlType != nil {
+				return []reflect.Value{*s.defaultReturnValue, reflect.ValueOf(err)}
+			} else {
+				return []reflect.Value{reflect.ValueOf(err)}
+			}
+		}
+	}
+	defer stmt.Close()
+
+	sqlResult, err1 := stmt.Exec(sqlParam...)
+
+	if err1 != nil {
+		if errorFlag == 0 {
+			panic(err1)
+		} else {
+			if s.returnSqlType != nil {
+				return []reflect.Value{*s.defaultReturnValue, reflect.ValueOf(err1)}
+			} else {
+				return []reflect.Value{reflect.ValueOf(err1)}
+			}
+		}
+	}
+
+	if s.returnSqlType != nil {
+		r1, _ := sqlResult.RowsAffected()
+		return []reflect.Value{reflect.ValueOf(int(r1)), nilError}
+	} else {
+		return []reflect.Value{nilError}
+	}
 }
 
 func (s *sqlInvoke) invokeInsert(context *context.LocalStack, args []reflect.Value, sql *MapperElementXml) []reflect.Value {
@@ -651,14 +811,12 @@ func AddMapperProxyTarget(target1 proxy.ProxyTarger, xml string) {
 	proxy.AddClassProxy(target1)
 }
 
-func NewSqlProvierConfigAnnotation(param string) []*proxy.AnnotationClass {
-	return []*proxy.AnnotationClass{
-		&proxy.AnnotationClass{
-			Name: AnnotationSqlProviderConfig,
-			Value: map[string]interface{}{
-				AnnotationSqlProviderConfigValueKey: &SqlProviderConfig{
-					Param: param,
-				},
+func NewSqlProvierConfigAnnotation(param string) *proxy.AnnotationClass {
+	return &proxy.AnnotationClass{
+		Name: AnnotationSqlProviderConfig,
+		Value: map[string]interface{}{
+			AnnotationSqlProviderConfigValueKey: &SqlProviderConfig{
+				Param: param,
 			},
 		},
 	}

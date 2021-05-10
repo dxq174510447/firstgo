@@ -198,12 +198,10 @@ func GetClassName(target interface{}) string {
 	return fmt.Sprintf("%s/%s", t.PkgPath(), t.Name())
 }
 
-func NewSingleAnnotation(annotationName string, value map[string]interface{}) []*AnnotationClass {
-	return []*AnnotationClass{
-		&AnnotationClass{
-			Name:  annotationName,
-			Value: value,
-		},
+func NewSingleAnnotation(annotationName string, value map[string]interface{}) *AnnotationClass {
+	return &AnnotationClass{
+		Name:  annotationName,
+		Value: value,
 	}
 }
 
