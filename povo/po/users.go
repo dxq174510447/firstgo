@@ -1,9 +1,21 @@
 package po
 
+import "time"
+
+AUTO
+//Indicates that the persistence provider should pick an appropriate strategy for the particular database.
+//IDENTITY
+//Indicates that the persistence provider must assign primary keys for the entity using a database identity column.
+//SEQUENCE
+//Indicates that the persistence provider must assign primary keys for the entity using a database sequence.
+//TABLE
+//Indicates that the persistence provider must assign primary keys for the entity using an underlying database table to ensure uniqueness.
+//`column:"Id" id:"true" transient:"false" updatable:"false" table:"" columnDefinition:"" GenerationType:"AUTO IDENTITY SEQUENCE TABLE"`
 import (
 	"time"
 )
 
+//`species:"gopher" color:"blue"`
 //type Users struct {
 //	Id         int
 //	Name       *sql.NullString
@@ -17,8 +29,8 @@ import (
 //}
 
 type Users struct {
-	Id         int
-	Name       string
+	Id         int      `column:"id" id:"true" transient:"false" updatable:"false" table:"users" columnDefinition:"" GenerationType:"IDENTITY"`
+	Name       string	`column:"name" updatable:"false" columnDefinition:""`
 	Password   string
 	Status     int
 	Fee        float64
