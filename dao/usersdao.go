@@ -11,7 +11,7 @@ import (
 type UsersDao struct {
 	Proxy_               *proxy.ProxyClass
 	GetById_             func(local *context.LocalStack, id int) (*po.Users, error)
-	FindByNameAndStatus_ func(local *context.LocalStack, name string, status int) ([]*po.Users, error)
+	FindByNameAndStatus_ func(local *context.LocalStack, name string, status int, statusList []string) ([]*po.Users, error)
 	FindIds_             func(local *context.LocalStack, users *po.Users) ([]int, error)
 	FindNames_           func(local *context.LocalStack, users *po.Users) ([]string, error)
 	FindFees_            func(local *context.LocalStack, users *po.Users) ([]float64, error)
@@ -35,8 +35,8 @@ func (c *UsersDao) GetById(local *context.LocalStack, id int) (*po.Users, error)
 	return c.GetById_(local, id)
 }
 
-func (c *UsersDao) FindByNameAndStatus(local *context.LocalStack, name string, status int) ([]*po.Users, error) {
-	return c.FindByNameAndStatus_(local, name, status)
+func (c *UsersDao) FindByNameAndStatus(local *context.LocalStack, name string, status int, statusList []string) ([]*po.Users, error) {
+	return c.FindByNameAndStatus_(local, name, status, statusList)
 }
 
 func (c *UsersDao) FindIds(local *context.LocalStack, users *po.Users) ([]int, error) {
@@ -97,7 +97,7 @@ var usersDao UsersDao = UsersDao{
 			},
 			&proxy.ProxyMethod{
 				Name:        "FindByNameAndStatus",
-				Annotations: dbcore.NewSqlProvierConfigAnnotation("_,name,status"),
+				Annotations: dbcore.NewSqlProvierConfigAnnotation("_,name,status,statusList"),
 			},
 		},
 	},

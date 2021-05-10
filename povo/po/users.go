@@ -26,4 +26,5 @@ type Users struct {
 	FeeTotal   int64
 	CreateDate *time.Time
 	CreateTime *time.Time
+	NameIn     []string
 }

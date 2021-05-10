@@ -9,15 +9,36 @@ const UsersXml = `
 	</select>
 	
 	<select id="FindByNameAndStatus">
-			select * from users where name = #{name} and status = #{status}  order by id desc 
+			select * from users where   
+			<include refid="conditionA1"></include>
+           order by id desc 
 	</select>
+
+	<sql id="conditionA1">
+		name = #{name} and status = #{status} 
+		{{if .statusList}}
+			and status in (
+				{{range $index, $ele := $.statusList}}{{if $index}},{{end}}#{statusList[{{$index}}]}{{end}}
+			)
+		{{end}}
+	</sql>
 
 	<select id="FindIds">
 			select id from users order by id desc 
 	</select>
 
 	<select id="FindNames">
-			select distinct name from users order by id desc 
+			select distinct name from users 
+			where 1=1
+<![CDATA[
+			{{if .NameIn}}
+				and name in (
+					{{range $index, $ele := $.NameIn}}{{if $index}},{{end}}#{NameIn[{{$index}}]}{{end}}
+				)
+			{{end}}
+			and status < 1
+]]>
+			order by id desc 
 	</select>
 
 	<select id="FindFees">

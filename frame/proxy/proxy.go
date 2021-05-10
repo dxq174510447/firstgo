@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 )
@@ -213,10 +214,28 @@ func getTargetValue(target interface{}, name string) interface{} {
 		return target
 	case reflect.Map:
 		m := target.(map[string]interface{})
-		return m[name]
+		if strings.Index(name, "[") > 0 {
+			p1 := strings.Index(name, "[")
+			p2 := strings.Index(name, "]")
+			field := name[0:p1]
+			index := name[p1+1 : p2]
+			index1, _ := strconv.Atoi(index)
+			return reflect.ValueOf(m[field]).Index(index1).Interface()
+		} else {
+			return m[name]
+		}
 	case reflect.Ptr:
 		if v.Elem().Kind() == reflect.Struct {
-			return v.Elem().FieldByName(name).Interface()
+			if strings.Index(name, "[") > 0 {
+				p1 := strings.Index(name, "[")
+				p2 := strings.Index(name, "]")
+				field := name[0:p1]
+				index := name[p1+1 : p2]
+				index1, _ := strconv.Atoi(index)
+				return v.Elem().FieldByName(field).Index(index1).Interface()
+			} else {
+				return v.Elem().FieldByName(name).Interface()
+			}
 		}
 	}
 	panic(fmt.Sprintf("%s找不到对应属性", name))

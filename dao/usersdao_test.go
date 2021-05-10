@@ -21,7 +21,7 @@ func printRow(v *po.Users) {
 		dbcore.GetSqlNullTypeValue(v.CreateTime))
 }
 
-func TestUsersDao_FindIds(t *testing.T) {
+func ATestUsersDao_FindIds(t *testing.T) {
 	local := context.NewLocalStack()
 
 	m5, err5 := GetUsersDao().FindIds(local, &po.Users{})
@@ -43,7 +43,7 @@ func TestUsersDao_FindIds(t *testing.T) {
 func TestUsersDao_FindNames(t *testing.T) {
 	local := context.NewLocalStack()
 
-	m5, err5 := GetUsersDao().FindNames(local, &po.Users{})
+	m5, err5 := GetUsersDao().FindNames(local, &po.Users{NameIn: []string{"w1322", "w13a232"}})
 	if err5 != nil {
 		fmt.Println(err5)
 		panic(err5)
@@ -58,7 +58,7 @@ func TestUsersDao_FindNames(t *testing.T) {
 	}
 }
 
-func TestUsersDao_FindFees(t *testing.T) {
+func ATestUsersDao_FindFees(t *testing.T) {
 	local := context.NewLocalStack()
 
 	m5, err5 := GetUsersDao().FindFees_(local, &po.Users{})
@@ -76,7 +76,7 @@ func TestUsersDao_FindFees(t *testing.T) {
 	}
 }
 
-func TestUsersDao_GetMaxFees(t *testing.T) {
+func ATestUsersDao_GetMaxFees(t *testing.T) {
 	local := context.NewLocalStack()
 
 	m5, err5 := GetUsersDao().GetMaxFees(local, &po.Users{})
@@ -88,7 +88,7 @@ func TestUsersDao_GetMaxFees(t *testing.T) {
 	}
 }
 
-func TestUsersDao_GetMaxId(t *testing.T) {
+func ATestUsersDao_GetMaxId(t *testing.T) {
 	local := context.NewLocalStack()
 
 	m5, err5 := GetUsersDao().GetMaxId(local, &po.Users{})
@@ -100,7 +100,7 @@ func TestUsersDao_GetMaxId(t *testing.T) {
 	}
 }
 
-func TestUsersDao_GetById(t *testing.T) {
+func ATestUsersDao_GetById(t *testing.T) {
 	local := context.NewLocalStack()
 
 	m5, err5 := GetUsersDao().GetById(local, 94)
@@ -117,10 +117,10 @@ func TestUsersDao_GetById(t *testing.T) {
 	}
 }
 
-func TestUsersDao_FindByNameAndStatus(t *testing.T) {
+func ATestUsersDao_FindByNameAndStatus(t *testing.T) {
 	local := context.NewLocalStack()
 
-	m5, err5 := GetUsersDao().FindByNameAndStatus(local, "w1322", 1)
+	m5, err5 := GetUsersDao().FindByNameAndStatus(local, "w1322", 1, []string{"102", "100", "1"})
 	if err5 != nil {
 		fmt.Println(err5)
 		panic(err5)

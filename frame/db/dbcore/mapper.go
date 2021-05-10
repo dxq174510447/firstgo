@@ -52,6 +52,8 @@ func (m *MapperFactory) ReplaceImportTag(sql string, refs map[string]*MapperElem
 	})
 	reg := regexp.MustCompile(`(?m)(^\s+|\s+$)`)
 	ns = reg.ReplaceAllString(ns, " ")
+	ns = strings.ReplaceAll(ns, "<![CDATA[", "")
+	ns = strings.ReplaceAll(ns, "]]>", "")
 	return ns
 }
 
@@ -178,14 +180,14 @@ func (s *sqlInvoke) getSqlFromTpl(context *context.LocalStack, args []reflect.Va
 			if err != nil {
 				return "", err
 			}
-			return buf.String(), nil
+			return RemoveEmptyRow(buf.String()), nil
 		} else {
 			buf := &bytes.Buffer{}
 			err := sql.Tpl.Execute(buf, args[1].Interface())
 			if err != nil {
 				return "", err
 			}
-			return buf.String(), nil
+			return RemoveEmptyRow(buf.String()), nil
 		}
 	}
 	// > 2
@@ -200,7 +202,7 @@ func (s *sqlInvoke) getSqlFromTpl(context *context.LocalStack, args []reflect.Va
 	if err != nil {
 		return "", err
 	}
-	return buf.String(), nil
+	return RemoveEmptyRow(buf.String()), nil
 }
 
 // 必须返回1-2个参数，其他一个必须是error并且放在最后一个返回值，至于sql返回有没有都行
@@ -225,6 +227,7 @@ func (s *sqlInvoke) invokeSelect(local *context.LocalStack, args []reflect.Value
 	}
 
 	sql, err1 := s.getSqlFromTpl(local, args, sqlEle)
+	fmt.Printf("SourceSql[%s]: %s \n", sqlEle.Id, sql)
 	if err1 != nil {
 		if errorFlag == 0 {
 			panic(err1)
@@ -313,6 +316,13 @@ func (s *sqlInvoke) invokeInsert(context *context.LocalStack, args []reflect.Val
 	return nil
 }
 
+// getArgumentsFromSql 根据sql获取使用的变量值
+//
+// Paramter:
+//
+// - 使用变量值
+//
+// - 替换之后的sql
 func (s *sqlInvoke) getArgumentsFromSql(local *context.LocalStack, args []reflect.Value, sql string) ([]interface{}, string, error) {
 	// 去除局部变量参数
 	if len(args) <= 1 {
@@ -904,4 +914,11 @@ func GetSqlColumnType(values []*sqlColumnType) string {
 		result.WriteString(" ")
 	}
 	return result.String()
+}
+
+//reg := regexp.MustCompile(`(?m)(^\s+|\s+$)`)
+var removeEmptyRowReg *regexp.Regexp = regexp.MustCompile(`(?m)^\s*$\n`)
+
+func RemoveEmptyRow(content string) string {
+	return removeEmptyRowReg.ReplaceAllString(content, "")
 }
