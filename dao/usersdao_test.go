@@ -184,7 +184,7 @@ func ATestUsersDao_DeleteNameByField(t *testing.T) {
 	}
 }
 
-func TestUsersDao_InsertSingle(t *testing.T) {
+func ATestUsersDao_InsertSingle(t *testing.T) {
 	local := context.NewLocalStack()
 
 	m5, err5 := GetUsersDao().InsertSingle(local, &po.Users{Name: "nnn1", Password: "ppp1"})
@@ -196,7 +196,7 @@ func TestUsersDao_InsertSingle(t *testing.T) {
 	}
 }
 
-func TestUsersDao_InsertBatch(t *testing.T) {
+func ATestUsersDao_InsertBatch(t *testing.T) {
 	local := context.NewLocalStack()
 
 	m5, err5 := GetUsersDao().InsertBatch(local, []*po.Users{
