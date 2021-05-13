@@ -180,7 +180,7 @@ func GetDispatchServlet() *DispatchServlet {
 	return &dispatchServlet
 }
 
-// AddRequestMapping 思路是根据path前缀匹配到controller，在根据path和method去匹配controller具体的method
+// AddControllerProxyTarget 思路是根据path前缀匹配到controller，在根据path和method去匹配controller具体的method
 func AddControllerProxyTarget(target1 proxy.ProxyTarger) {
 	proxy.AddClassProxy(target1)
 
@@ -222,7 +222,7 @@ func AddControllerProxyTarget(target1 proxy.ProxyTarger) {
 			GetDefaultFilterChain().DoFilter(local, request, response)
 		}
 	}(invoker)
-
+	fmt.Println(prefix)
 	http.HandleFunc(prefix+"/", f) //前缀匹配
 	http.HandleFunc(prefix, f)     //绝对匹配
 }

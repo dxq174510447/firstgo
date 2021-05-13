@@ -825,13 +825,18 @@ func newSqlInvoke(
 	}
 }
 
-func AddMapperProxyTarget(target1 proxy.ProxyTarger, xml string) {
+func AddMapperProxyTarget(target1 proxy.ProxyTarger, xml string, entity interface{}) {
 
 	//解析字段方法 包裹一层
 	rv := reflect.ValueOf(target1)
 	rt := rv.Elem().Type()
 
 	xmlele := mapperFactory.ParseXml(target1, xml)
+
+	if BaseXml != "" {
+		//var tableDef *TableDef = paseEntityType(entity)
+		// tableDef
+	}
 
 	methodRef := make(map[string]*proxy.ProxyMethod)
 	if len(target1.ProxyTarget().Methods) != 0 {
@@ -843,53 +848,129 @@ func AddMapperProxyTarget(target1 proxy.ProxyTarger, xml string) {
 	if m1 := rt.NumField(); m1 > 0 {
 		for i := 0; i < m1; i++ {
 			field := rt.Field(i)
-			if field.Type.Kind() == reflect.Func && rv.Elem().FieldByName(field.Name).IsNil() {
-				call := rv.Elem().FieldByName(field.Name)
-
-				methodName := strings.ReplaceAll(field.Name, "_", "")
-				methodSetting, ok := methodRef[methodName]
-				if !ok {
-					methodSetting = &proxy.ProxyMethod{Name: methodName}
-				}
-
-				var providerConfig *SqlProviderConfig = nil
-				if methodSetting != nil && len(methodSetting.Annotations) > 0 {
-					for _, anno := range methodSetting.Annotations {
-						if anno.Name == AnnotationSqlProviderConfig {
-							if provider, f := anno.Value[AnnotationSqlProviderConfigValueKey]; f {
-								providerConfig = provider.(*SqlProviderConfig)
-							}
-						}
+			if field.Type == BaseDaoType {
+				if m2 := field.Type.NumField(); m2 > 0 {
+					for j := 0; j < m2; j++ {
+						basefield := field.Type.Field(j)
+						target := rv.Elem().FieldByName(field.Name)
+						addCallerToField(target1, &target, &basefield, methodRef, xmlele)
 					}
 				}
-
-				var invoker *sqlInvoke
-				fo := field.Type.NumOut()
-				if fo >= 2 {
-					defaultReturnValue := proxy.GetMethodReturnDefaultValue(field.Type.Out(0))
-					structFields := proxy.GetStructField(field.Type.Out(0))
-					invoker = newSqlInvoke(target1, target1.ProxyTarget(),
-						methodSetting,
-						xmlele, field.Type.Out(0),
-						providerConfig, defaultReturnValue, structFields)
-				} else {
-					invoker = newSqlInvoke(target1, target1.ProxyTarget(), methodSetting,
-						xmlele, nil,
-						providerConfig, nil, nil)
-				}
-
-				proxyCall := func(command *sqlInvoke) reflect.Value {
-					newCall := reflect.MakeFunc(field.Type, func(in []reflect.Value) []reflect.Value {
-						return command.invoke(in[0].Interface().(*context.LocalStack), in)
-					})
-					return newCall
-				}(invoker)
-				call.Set(proxyCall)
+			} else if field.Type.Kind() == reflect.Func && rv.Elem().FieldByName(field.Name).IsNil() {
+				target := rv.Elem()
+				addCallerToField(target1, &target, &field, methodRef, xmlele)
 			}
 		}
 	}
 
 	proxy.AddClassProxy(target1)
+}
+
+func paseEntityType(entity interface{}) *TableDef {
+	ty := reflect.TypeOf(entity).Elem()
+	n := ty.NumField()
+
+	var td TableDef
+	for i := 0; i < n; i++ {
+
+		var tc *TableColumnDef = &TableColumnDef{}
+		td.Columns = append(td.Columns, tc)
+
+		field := ty.Field(i)
+		tc.FieldName = field.Name
+		tc.Field = &field
+
+		if column, ok := field.Tag.Lookup("column"); ok {
+			if column != "" {
+				tc.ColumnName = column
+			}
+		}
+		if id, ok := field.Tag.Lookup("id"); ok {
+			if id != "" {
+				td.IdColumn = tc
+			}
+		}
+
+		tc.Transient = false
+		if transient, ok := field.Tag.Lookup("transient"); ok {
+			if transient == "true" {
+				tc.Transient = true
+			}
+		}
+
+		tc.Updatable = true
+		if updatable, ok := field.Tag.Lookup("updatable"); ok {
+			if updatable == "false" {
+				tc.Updatable = false
+			}
+		}
+		if generationType, ok := field.Tag.Lookup("GenerationType"); ok {
+			if generationType != "" {
+				td.GenerationType = generationType
+			}
+		}
+		if dbname, ok := field.Tag.Lookup("dbname"); ok {
+			if dbname != "" {
+				td.DbName = dbname
+			}
+		}
+		if table, ok := field.Tag.Lookup("table"); ok {
+			if table != "" {
+				td.Name = table
+			}
+		}
+	}
+
+	return &td
+}
+
+func addCallerToField(target1 proxy.ProxyTarger,
+	target *reflect.Value,
+	field *reflect.StructField,
+	methodRef map[string]*proxy.ProxyMethod,
+	xmlele map[string]*MapperElementXml,
+) {
+	call := target.FieldByName(field.Name)
+
+	methodName := strings.ReplaceAll(field.Name, "_", "")
+	methodSetting, ok := methodRef[methodName]
+	if !ok {
+		methodSetting = &proxy.ProxyMethod{Name: methodName}
+	}
+
+	var providerConfig *SqlProviderConfig = nil
+	if methodSetting != nil && len(methodSetting.Annotations) > 0 {
+		for _, anno := range methodSetting.Annotations {
+			if anno.Name == AnnotationSqlProviderConfig {
+				if provider, f := anno.Value[AnnotationSqlProviderConfigValueKey]; f {
+					providerConfig = provider.(*SqlProviderConfig)
+				}
+			}
+		}
+	}
+
+	var invoker *sqlInvoke
+	fo := field.Type.NumOut()
+	if fo >= 2 {
+		defaultReturnValue := proxy.GetMethodReturnDefaultValue(field.Type.Out(0))
+		structFields := proxy.GetStructField(field.Type.Out(0))
+		invoker = newSqlInvoke(target1, target1.ProxyTarget(),
+			methodSetting,
+			xmlele, field.Type.Out(0),
+			providerConfig, defaultReturnValue, structFields)
+	} else {
+		invoker = newSqlInvoke(target1, target1.ProxyTarget(), methodSetting,
+			xmlele, nil,
+			providerConfig, nil, nil)
+	}
+
+	proxyCall := func(command *sqlInvoke) reflect.Value {
+		newCall := reflect.MakeFunc(field.Type, func(in []reflect.Value) []reflect.Value {
+			return command.invoke(in[0].Interface().(*context.LocalStack), in)
+		})
+		return newCall
+	}(invoker)
+	call.Set(proxyCall)
 }
 
 func NewSqlProvierConfigAnnotation(param string) *proxy.AnnotationClass {

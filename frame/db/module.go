@@ -1,6 +1,6 @@
 package db
 
-import ()
+import _ "firstgo/frame/db/filter"
 
 func init() {
 

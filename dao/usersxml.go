@@ -75,7 +75,8 @@ const UsersXml = `
 	</delete>
 
 	<insert id="InsertSingle">
-		insert into users(name,password) values (#{Name},#{Password}) 
+		insert into users(name,password,status,fee,create_date,create_time,fee_total) values 
+			(#{Name},#{Password},#{Status},#{Fee},#{CreateDate},#{CreateTime},#{FeeTotal}) 
 	</insert>
 
 	<insert id="InsertBatch">
@@ -84,7 +85,40 @@ const UsersXml = `
 		{{if $index}},{{end}}(#{values[{{$index}}].Name},#{values[{{$index}}].Password})
 		{{end}}
 	</insert>
+
+
+	<insert id="Save1">
+		insert into users(name,password,status,fee,create_date,create_time,fee_total) values 
+			(#{Name},#{Password},#{Status},#{Fee},#{CreateDate},#{CreateTime},#{FeeTotal})  
+	</insert>
+
+	<update id="Update1">
+		update users set name = #{Name},status = #{Status},password = #{Password} where id = #{Id} 
+	</update>
+
+	<delete id="Delete1">
+		delete from users where id = #{id}
+	</delete>
 	
+	<select id="Get1">
+			select * from users where id = #{id}
+	</select>
+
+	<update id="ChangeStatus1">
+		update users set status = #{status} where id = #{id} 
+	</update>
+
+	<select id="List1">
+		select * from users
+	</select>
+
+	<select id="FindByNameExcludeId1">
+		select count(*) from users where name = #{name} and id != #{id}
+	</select>
+
+	<select id="FindByName1">
+		select count(*) from users where name = #{name}
+	</select>
 </mapper>
 
 `

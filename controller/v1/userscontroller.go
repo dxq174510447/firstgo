@@ -71,37 +71,37 @@ var userController UsersController = UsersController{
 			http.NewRestAnnotation("/v1/users", "", "", ""),
 		},
 		Methods: []*proxy.ProxyMethod{
-			&proxy.ProxyMethod{
+			{
 				Name: "Save",
 				Annotations: []*proxy.AnnotationClass{
 					http.NewRestAnnotation("/", "post", "", ""),
 				},
 			},
-			&proxy.ProxyMethod{
+			{
 				Name: "Update",
 				Annotations: []*proxy.AnnotationClass{
 					http.NewRestAnnotation("/", "put", "", ""),
 				},
 			},
-			&proxy.ProxyMethod{
+			{
 				Name: "Delete",
 				Annotations: []*proxy.AnnotationClass{
 					http.NewRestAnnotation("/", "delete", "_,id", ""),
 				},
 			},
-			&proxy.ProxyMethod{
+			{
 				Name: "Get",
 				Annotations: []*proxy.AnnotationClass{
 					http.NewRestAnnotation("/", "get", "_,id", ""),
 				},
 			},
-			&proxy.ProxyMethod{
+			{
 				Name: "List",
 				Annotations: []*proxy.AnnotationClass{
 					http.NewRestAnnotation("/list", "post", "", ""),
 				},
 			},
-			&proxy.ProxyMethod{
+			{
 				Name: "ChangeStatus",
 				Annotations: []*proxy.AnnotationClass{
 					http.NewRestAnnotation("/change/status", "post", "_,id,status", ""),
@@ -110,7 +110,7 @@ var userController UsersController = UsersController{
 		},
 	},
 	List_: func(local *context.LocalStack, param *vo.UsersParam, self *UsersController) *vo.UsersPage {
-		result := self.usersService.List(local, param)
+		result, _ := self.usersService.List(local, param)
 		return result
 	},
 	Save_: func(local *context.LocalStack, param *vo.UsersAdd, self *UsersController) *vo.UsersVo {
@@ -126,11 +126,11 @@ var userController UsersController = UsersController{
 		var data *po.Users = &po.Users{}
 		util.JsonUtil.Copy(param, data)
 
-		result := self.usersService.Save(local, data)
+		result, _ := self.usersService.Save(local, data)
 		return result
 	},
 	Get_: func(local *context.LocalStack, id int, self *UsersController) *vo.UsersVo {
-		result := self.usersService.Get(local, id)
+		result, _ := self.usersService.Get(local, id)
 		return result
 	},
 	Delete_: func(local *context.LocalStack, id int, self *UsersController) {
@@ -140,7 +140,7 @@ var userController UsersController = UsersController{
 		var data *po.Users = &po.Users{}
 		util.JsonUtil.Copy(param, data)
 
-		result := self.usersService.Update(local, data)
+		result, _ := self.usersService.Update(local, data)
 		return result
 	},
 	ChangeStatus_: func(local *context.LocalStack, id int, status int, self *UsersController) {
@@ -153,7 +153,6 @@ func GetUserController() *UsersController {
 }
 
 func init() {
-
 	http.AddControllerProxyTarget(proxy.ProxyTarger(&userController))
 	// 初始化
 	userController.usersService = impl.GetUsersService()

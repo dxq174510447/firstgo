@@ -1,6 +1,6 @@
 package controller
 
-import ()
+import _ "firstgo/controller/v1"
 
 func init() {
 

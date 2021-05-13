@@ -7,6 +7,7 @@ import (
 	"firstgo/povo/po"
 	"fmt"
 	"testing"
+	"time"
 )
 
 func printRow(v *po.Users) {
@@ -187,7 +188,8 @@ func ATestUsersDao_DeleteNameByField(t *testing.T) {
 func ATestUsersDao_InsertSingle(t *testing.T) {
 	local := context.NewLocalStack()
 
-	m5, err5 := GetUsersDao().InsertSingle(local, &po.Users{Name: "nnn1", Password: "ppp1"})
+	n := time.Now()
+	m5, err5 := GetUsersDao().InsertSingle(local, &po.Users{Name: "nnn21", Password: "ppp2", Status: 1, Fee: 333.333, CreateTime: &n, CreateDate: &n})
 	if err5 != nil {
 		fmt.Println(err5)
 		panic(err5)
@@ -199,8 +201,9 @@ func ATestUsersDao_InsertSingle(t *testing.T) {
 func ATestUsersDao_InsertBatch(t *testing.T) {
 	local := context.NewLocalStack()
 
+	n := time.Now()
 	m5, err5 := GetUsersDao().InsertBatch(local, []*po.Users{
-		{Name: "nnn2", Password: "ppp2"},
+		{Name: "nnn2", Password: "ppp2", Status: 1, Fee: 333.333, CreateTime: &n, CreateDate: &n},
 		{Name: "nnn3", Password: "ppp3"},
 		{Name: "nnn4", Password: "ppp4"},
 	})

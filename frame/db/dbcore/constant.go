@@ -35,8 +35,9 @@ const (
 	SqlTypeSelect = "select_"
 	SqlTypeSql    = "sql_"
 	// dao 中参数配置
-	AnnotationSqlProviderConfig         = "AnnotationSqlProviderConfig_"
-	AnnotationSqlProviderConfigValueKey = "AnnotationSqlProviderConfigValueKey_"
+	AnnotationSqlProviderConfig           = "AnnotationSqlProviderConfig_"
+	AnnotationSqlProviderConfigValueKey   = "AnnotationSqlProviderConfigValueKey_"
+	AnnotationDaoEntityTargetTypeValueKey = "AnnotationDaoEntityTargetTypeValueKey_"
 )
 
 var SqlNullInt32Type reflect.Type = reflect.TypeOf(sql.NullInt32{})

@@ -25,14 +25,14 @@ import "time"
 //}
 
 type Users struct {
-	Id         int    `column:"id" id:"true" transient:"false" updatable:"false" table:"users" columnDefinition:"" GenerationType:"IDENTITY"`
-	Name       string `column:"name" updatable:"false" columnDefinition:""`
-	Password   string
-	Status     int
-	Fee        float64
-	FeeStatus  int
-	FeeTotal   int64
-	CreateDate *time.Time
-	CreateTime *time.Time
-	NameIn     []string
+	Id         int        `column:"id" id:"true" transient:"false" updatable:"false" table:"users" columnDefinition:"" GenerationType:"IDENTITY"`
+	Name       string     `column:"name" columnDefinition:""`
+	Password   string     `column:"password" columnDefinition:""`
+	Status     int        `column:"status" columnDefinition:""`
+	Fee        float64    `column:"fee" columnDefinition:""`
+	FeeStatus  int        `column:"fee_status" columnDefinition:""`
+	FeeTotal   int64      `column:"fee_total" columnDefinition:""`
+	CreateDate *time.Time `column:"create_date" columnDefinition:""`
+	CreateTime *time.Time `column:"create_time" updatable:"false" columnDefinition:""`
+	NameIn     []string   `transient:"true"`
 }
