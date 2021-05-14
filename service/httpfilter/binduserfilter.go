@@ -9,6 +9,7 @@ import (
 	"net/http"
 )
 
+// BindUserFilter test localstack
 type BindUserFilter struct {
 }
 
@@ -34,10 +35,6 @@ func (b *BindUserFilter) Order() int {
 }
 
 var bindUserFilter BindUserFilter = BindUserFilter{}
-
-func GetBindUserFilter() *BindUserFilter {
-	return &bindUserFilter
-}
 
 func getUsersByToken(token string) *po.Users {
 	return &po.Users{

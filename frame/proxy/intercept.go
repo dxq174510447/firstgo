@@ -73,49 +73,6 @@ func (d *DefaultProxyFilterFactory) AnnotationMatch() []string {
 
 var defaultProxyFilterFactory ProxyFilterFactory = ProxyFilterFactory(&DefaultProxyFilterFactory{})
 
-// LogProxyFilter 默认日志拦截器
-type LogProxyFilter struct {
-	Next ProxyFilter
-}
-
-func (d *LogProxyFilter) Execute(context *context.LocalStack,
-	classInfo *ProxyClass,
-	methodInfo *ProxyMethod,
-	invoker *reflect.Value,
-	arg []reflect.Value) []reflect.Value {
-
-	fmt.Println("log begin")
-	defer func() {
-		fmt.Println("log end")
-	}()
-	return d.Next.Execute(context, classInfo, methodInfo, invoker, arg)
-}
-
-func (d *LogProxyFilter) SetNext(next ProxyFilter) {
-	d.Next = next
-}
-
-func (d *LogProxyFilter) Order() int {
-	return 0
-}
-
-var logProxyFilter LogProxyFilter = LogProxyFilter{}
-
-type LogProxyFilterFactory struct {
-}
-
-func (l *LogProxyFilterFactory) GetInstance(m map[string]interface{}) ProxyFilter {
-	r1 := ProxyFilter(&logProxyFilter)
-	return r1
-}
-
-func (l *LogProxyFilterFactory) AnnotationMatch() []string {
-	return []string{AnnotationController}
-}
-
-var logProxyFilterFactory ProxyFilterFactory = ProxyFilterFactory(&LogProxyFilterFactory{})
-
 func init() {
 	AddDefaultInvokerFilterFactory(defaultProxyFilterFactory)
-	AddProxyFilterFactory(logProxyFilterFactory)
 }

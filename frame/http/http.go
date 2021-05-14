@@ -215,6 +215,10 @@ func AddControllerProxyTarget(target1 proxy.ProxyTarger) {
 	f := func(invoker1 *ControllerVar) func(http.ResponseWriter, *http.Request) {
 		return func(response http.ResponseWriter, request *http.Request) {
 			local := context.NewLocalStack()
+
+			SetCurrentHttpRequest(local, request)
+			SetCurrentHttpResponse(local, response)
+
 			defer local.Destroy()
 
 			SetCurrentControllerInvoker(local, invoker1)
@@ -222,7 +226,6 @@ func AddControllerProxyTarget(target1 proxy.ProxyTarger) {
 			GetDefaultFilterChain().DoFilter(local, request, response)
 		}
 	}(invoker)
-	fmt.Println(prefix)
 	http.HandleFunc(prefix+"/", f) //前缀匹配
 	http.HandleFunc(prefix, f)     //绝对匹配
 }

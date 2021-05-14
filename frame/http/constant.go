@@ -5,17 +5,24 @@ import (
 	"firstgo/frame/context"
 	"firstgo/frame/proxy"
 	"fmt"
+	"net/http"
 	"runtime"
 )
 
 const (
 	AnnotationRestController = "AnnotationRestController_"
 
+	AnnotationController = "AnnotationController_"
+
 	AnnotationValueRestKey = "AnnotationValueRestKey_"
 
 	FilterIndexWaitToExecute = "FilterIndexWaitToExecute_"
 
 	CurrentControllerInvoker = "CurrentControllerInvoker_"
+
+	CurrentHttpRequest = "CurrentHttpRequest_"
+
+	CurrentHttpResponse = "CurrentHttpResponse_"
 )
 
 func SetCurrentControllerInvoker(local *context.LocalStack, invoker1 *ControllerVar) {
@@ -24,6 +31,22 @@ func SetCurrentControllerInvoker(local *context.LocalStack, invoker1 *Controller
 func GetCurrentControllerInvoker(local *context.LocalStack) *ControllerVar {
 	invoker := local.Get(CurrentControllerInvoker)
 	return invoker.(*ControllerVar)
+}
+
+func SetCurrentHttpRequest(local *context.LocalStack, request *http.Request) {
+	local.Set(CurrentHttpRequest, request)
+}
+func GetCurrentHttpRequest(local *context.LocalStack) *http.Request {
+	invoker := local.Get(CurrentHttpRequest)
+	return invoker.(*http.Request)
+}
+
+func SetCurrentHttpResponse(local *context.LocalStack, response http.ResponseWriter) {
+	local.Set(CurrentHttpResponse, response)
+}
+func GetCurrentHttpResponse(local *context.LocalStack) http.ResponseWriter {
+	invoker := local.Get(CurrentHttpResponse)
+	return invoker.(http.ResponseWriter)
 }
 
 func SetCurrentFilterIndex(local *context.LocalStack, index int) {
