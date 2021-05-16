@@ -166,30 +166,83 @@ func AddClassProxy(target ProxyTarger) {
 	if m1 := rt.NumField(); m1 > 0 {
 		for i := 0; i < m1; i++ {
 			field := rt.Field(i)
-			if field.Type.Kind() == reflect.Func {
-				call := rv.Elem().FieldByName(field.Name)
-				oldCall := reflect.ValueOf(call.Interface())
-
-				methodName := strings.ReplaceAll(field.Name, "_", "")
-				methodSetting, ok := methodRef[methodName]
-				if !ok {
-					methodSetting = &ProxyMethod{Name: methodName}
-				}
-
-				invoker := newMethodInvoke(target, clazz, methodSetting, &oldCall)
-
-				proxyCall := func(command *methodInvoke) reflect.Value {
-					newCall := reflect.MakeFunc(rt.Field(i).Type, func(in []reflect.Value) []reflect.Value {
-						fmt.Printf(" %s %s agent begin \n", invoker.clazz.Name, invoker.method.Name)
-						defer fmt.Printf(" %s %s agent end \n", invoker.clazz.Name, invoker.method.Name)
-						return command.invoke(in[0].Interface().(*context.LocalStack), in)
-					})
-					return newCall
-				}(invoker)
-				call.Set(proxyCall)
-			}
+			proxyStructFuncField(target, &rv, rt, methodRef, target, &rv, rt, methodRef, &field)
 		}
 	}
+}
+
+// 重新设置struct field func 设置代理链
+func proxyStructFuncField(target ProxyTarger,
+	targetValue *reflect.Value,
+	targetType reflect.Type,
+	targetMethod map[string]*ProxyMethod,
+	currentTarget ProxyTarger,
+	currentTargetValue *reflect.Value,
+	currentTargetType reflect.Type,
+	currentTargetMethod map[string]*ProxyMethod,
+	field *reflect.StructField) {
+
+	var isproxyfield bool = false
+	if field.Type.Kind() == reflect.Func {
+		isproxyfield = true
+	} else if field.Type.Kind() == reflect.Struct {
+		//fmt.Println(field.Type.Kind(),field.Name
+		// currentTargetValue is ptr
+		fieldValue := currentTargetValue.Elem().FieldByName(field.Name)
+		fieldType, _ := currentTargetType.FieldByName(field.Name)
+		if pt, ok := fieldValue.Addr().Interface().(ProxyTarger); ok {
+			if m1 := fieldType.Type.NumField(); m1 > 0 {
+
+				methodRef := make(map[string]*ProxyMethod)
+				if len(pt.ProxyTarget().Methods) != 0 {
+					for _, md := range pt.ProxyTarget().Methods {
+						methodRef[md.Name] = md
+					}
+				}
+
+				for i := 0; i < m1; i++ {
+					hhfield := fieldType.Type.Field(i)
+					ptrval := fieldValue.Addr()
+					proxyStructFuncField(target, targetValue, targetType, targetMethod,
+						pt, &ptrval, fieldType.Type, methodRef, &hhfield)
+				}
+			}
+			return
+		}
+	}
+
+	if !isproxyfield {
+		return
+	}
+
+	call := currentTargetValue.Elem().FieldByName(field.Name)
+	oldCall := reflect.ValueOf(call.Interface())
+
+	methodName := strings.ReplaceAll(field.Name, "_", "")
+	var methodSetting *ProxyMethod
+
+	if methodSetting1, ok1 := currentTargetMethod[methodName]; !ok1 {
+		if methodSetting2, ok2 := targetMethod[methodName]; !ok2 {
+			methodSetting = methodSetting2
+		}
+	} else {
+		methodSetting = methodSetting1
+	}
+	if methodSetting == nil {
+		methodSetting = &ProxyMethod{Name: methodName}
+	}
+
+	invoker := newMethodInvoke(currentTarget, target.ProxyTarget(), methodSetting, &oldCall)
+
+	proxyCall := func(command *methodInvoke) reflect.Value {
+		newCall := reflect.MakeFunc(field.Type, func(in []reflect.Value) []reflect.Value {
+			fmt.Printf(" %s %s agent begin \n", invoker.clazz.Name, invoker.method.Name)
+			defer fmt.Printf(" %s %s agent end \n", invoker.clazz.Name, invoker.method.Name)
+			return command.invoke(in[0].Interface().(*context.LocalStack), in)
+		})
+		return newCall
+	}(invoker)
+	call.Set(proxyCall)
 }
 
 //GetClassName 用来获取struct的全路径 传递指针
@@ -321,6 +374,9 @@ func GetMethodReturnDefaultValue(rtType reflect.Type) *reflect.Value {
 		result = reflect.New(rtType).Elem()
 	case reflect.Struct:
 		result = reflect.New(rtType).Elem()
+	case reflect.Interface:
+		//base Get
+		return nil
 	default:
 		panic(fmt.Sprintf("%s找不到对应默认值", rtType.String()))
 	}

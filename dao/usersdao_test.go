@@ -214,3 +214,89 @@ func ATestUsersDao_InsertBatch(t *testing.T) {
 		fmt.Println("result", m5)
 	}
 }
+
+func ATestUsersDao_Save(t *testing.T) {
+	local := context.NewLocalStack()
+
+	n := time.Now()
+	//m5, err5 := GetUsersDao().Save(local, &po.Users{Name: "new22", Status: 1, Fee: 333.333, CreateTime: &n, CreateDate: &n})
+	m5, err5 := GetUsersDao().Save(local, &po.Users{Name: "new22", Fee: 333.333, CreateDate: &n})
+
+	if err5 != nil {
+		fmt.Println(err5)
+		panic(err5)
+	} else {
+		fmt.Println("result", m5)
+	}
+}
+
+func ATestUsersDao_Update(t *testing.T) {
+	local := context.NewLocalStack()
+
+	n := time.Now()
+	//m5, err5 := GetUsersDao().Save(local, &po.Users{Name: "new22", Status: 1, Fee: 333.333, CreateTime: &n, CreateDate: &n})
+	m5, err5 := GetUsersDao().Update(local, &po.Users{Id: 155, Name: "new212", Fee: 333.333, CreateDate: &n, CreateTime: &n})
+
+	if err5 != nil {
+		fmt.Println(err5)
+		panic(err5)
+	} else {
+		fmt.Println("result", m5)
+	}
+}
+
+func ATestUsersDao_Delete(t *testing.T) {
+	local := context.NewLocalStack()
+
+	//n := time.Now()
+	//m5, err5 := GetUsersDao().Save(local, &po.Users{Name: "new22", Status: 1, Fee: 333.333, CreateTime: &n, CreateDate: &n})
+	m5, err5 := GetUsersDao().Delete(local, 155)
+
+	if err5 != nil {
+		fmt.Println(err5)
+		panic(err5)
+	} else {
+		fmt.Println("result", m5)
+	}
+}
+
+func ATestUsersDao_Get(t *testing.T) {
+	local := context.NewLocalStack()
+
+	//n := time.Now()
+	//m5, err5 := GetUsersDao().Save(local, &po.Users{Name: "new22", Status: 1, Fee: 333.333, CreateTime: &n, CreateDate: &n})
+	m5, err5 := GetUsersDao().Get(local, 154)
+
+	if err5 != nil {
+		fmt.Println(err5)
+		panic(err5)
+	} else {
+		if m5 == nil {
+			fmt.Println("result nil")
+		} else {
+			printRow(m5)
+			fmt.Println("result", m5)
+		}
+	}
+}
+
+func TestUsersDao_Find(t *testing.T) {
+	local := context.NewLocalStack()
+
+	//n := time.Now()
+	//m5, err5 := GetUsersDao().Save(local, &po.Users{Name: "new22", Status: 1, Fee: 333.333, CreateTime: &n, CreateDate: &n})
+	m5, err5 := GetUsersDao().Find(local, &po.Users{Name: "new22"})
+
+	if err5 != nil {
+		fmt.Println(err5)
+		panic(err5)
+	} else {
+		if len(m5) == 0 {
+			fmt.Println("result length 0")
+		} else {
+			for _, r := range m5 {
+				printRow(r)
+			}
+		}
+	}
+}

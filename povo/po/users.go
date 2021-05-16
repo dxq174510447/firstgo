@@ -25,14 +25,14 @@ import "time"
 //}
 
 type Users struct {
-	Id         int        `column:"id" id:"true" transient:"false" updatable:"false" table:"users" columnDefinition:"" GenerationType:"IDENTITY" json:"id,omitempty"`
+	Id         int        `column:"id" id:"true" transient:"false" updatable:"true" table:"users" columnDefinition:"" GenerationType:"IDENTITY" json:"id,omitempty"`
 	Name       string     `column:"name" columnDefinition:"" json:"name,omitempty"`
 	Password   string     `column:"password" columnDefinition:"" json:"password,omitempty"`
 	Status     int        `column:"status" columnDefinition:"" json:"status,omitempty"`
 	Fee        float64    `column:"fee" columnDefinition:"" json:"fee,omitempty"`
 	FeeStatus  int        `column:"fee_status" columnDefinition:"" json:"fee_status,omitempty"`
 	FeeTotal   int64      `column:"fee_total" columnDefinition:"" json:"fee_total,omitempty"`
-	CreateDate *time.Time `column:"create_date" columnDefinition:"" json:"create_date,omitempty"`
-	CreateTime *time.Time `column:"create_time" updatable:"false" columnDefinition:"" json:"create_time,omitempty"`
+	CreateDate *time.Time `column:"create_date" updatable:"false" columnDefinition:"" json:"create_date,omitempty"`
+	CreateTime *time.Time `column:"create_time"  columnDefinition:"" json:"create_time,omitempty"`
 	NameIn     []string   `transient:"true" json:"name_in,omitempty"`
 }

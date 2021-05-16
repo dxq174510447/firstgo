@@ -141,6 +141,7 @@ type sqlInvoke struct {
 	//如果返回的是结构体类型 字段field
 	structFieldMap map[string]reflect.StructField
 	sqlFieldMap    []*sqlColumnType
+	entityType     reflect.Type
 }
 
 func (s *sqlInvoke) invoke(context *context.LocalStack, args []reflect.Value) []reflect.Value {
@@ -727,6 +728,8 @@ func (s *sqlInvoke) scanRow(result *sql.Rows) (*reflect.Value, error) {
 	}
 	//fmt.Println(valueptr[0])
 	var result1 *reflect.Value
+
+	//fmt.Println(s.returnSqlElementType.Kind(),s.returnSqlElementType.String())
 	switch s.returnSqlElementType.Kind() {
 	case reflect.Struct:
 		hp := reflect.New(s.returnSqlElementType)
@@ -753,7 +756,7 @@ func (s *sqlInvoke) coverToGoType(ct *sql.ColumnType) *sqlColumnType {
 	result := sqlColumnType{column: ct}
 	addDefaultType := true
 
-	if s.structFieldMap != nil {
+	if len(s.structFieldMap) > 0 {
 		columnName := ct.Name()
 		fieldName := proxy.GetCamelCaseName(columnName)
 		if field, ok := s.structFieldMap[fieldName]; ok {
@@ -762,6 +765,8 @@ func (s *sqlInvoke) coverToGoType(ct *sql.ColumnType) *sqlColumnType {
 			result.defaultType = field.Type
 		}
 	}
+	//fmt.Println(s.structFieldMap)
+	//fmt.Println(result.defaultType)
 	//fmt.Println(result.column.Name(), result.field.Type)
 	if addDefaultType {
 		databasetype := strings.ToLower(ct.DatabaseTypeName())
@@ -790,16 +795,30 @@ func newSqlInvoke(
 	providerConfig *SqlProviderConfig,
 	defaultReturnValue *reflect.Value, //默认返回类型值
 	structFieldMap map[string]reflect.StructField,
+	entityptr interface{},
+	baseMethod bool,
 ) *sqlInvoke {
 
 	var returnSqlElementType reflect.Type = nil
 	if returnSqlType != nil {
 		switch returnSqlType.Kind() {
 		case reflect.Slice:
-			if returnSqlType.Elem().Kind() == reflect.Ptr {
-				returnSqlElementType = returnSqlType.Elem().Elem()
+			if baseMethod {
+				// base find
+				entityType := reflect.TypeOf(entityptr)
+
+				//returnSqlType = reflect.SliceOf(entityType)
+
+				returnSqlElementType = entityType.Elem()
+
+				defaultReturnValue = proxy.GetMethodReturnDefaultValue(returnSqlType)
+				structFieldMap = proxy.GetStructField(entityType)
 			} else {
-				returnSqlElementType = returnSqlType.Elem()
+				if returnSqlType.Elem().Kind() == reflect.Ptr {
+					returnSqlElementType = returnSqlType.Elem().Elem()
+				} else {
+					returnSqlElementType = returnSqlType.Elem()
+				}
 			}
 		case reflect.Ptr:
 			if returnSqlType.Elem().Kind() == reflect.Struct {
@@ -807,6 +826,13 @@ func newSqlInvoke(
 			} else {
 				returnSqlElementType = returnSqlType
 			}
+		case reflect.Interface:
+			//base Get
+			returnSqlType = reflect.TypeOf(entityptr)
+			returnSqlElementType = returnSqlType.Elem()
+
+			defaultReturnValue = proxy.GetMethodReturnDefaultValue(returnSqlType)
+			structFieldMap = proxy.GetStructField(returnSqlType)
 		default:
 			returnSqlElementType = returnSqlType
 		}
@@ -832,10 +858,15 @@ func AddMapperProxyTarget(target1 proxy.ProxyTarger, xml string, entity interfac
 	rt := rv.Elem().Type()
 
 	xmlele := mapperFactory.ParseXml(target1, xml)
-
+	var baseXmlEle map[string]*MapperElementXml
 	if BaseXml != "" {
-		//var tableDef *TableDef = paseEntityType(entity)
-		// tableDef
+		tableDef := parseEntityType(entity)
+		buf := &bytes.Buffer{}
+		err1 := BaseXmlTpl.Execute(buf, tableDef)
+		if err1 != nil {
+			panic(err1)
+		}
+		baseXmlEle = mapperFactory.ParseXml(target1, buf.String())
 	}
 
 	methodRef := make(map[string]*proxy.ProxyMethod)
@@ -853,12 +884,12 @@ func AddMapperProxyTarget(target1 proxy.ProxyTarger, xml string, entity interfac
 					for j := 0; j < m2; j++ {
 						basefield := field.Type.Field(j)
 						target := rv.Elem().FieldByName(field.Name)
-						addCallerToField(target1, &target, &basefield, methodRef, xmlele)
+						addCallerToField(target1, &target, &basefield, methodRef, baseXmlEle, entity, true)
 					}
 				}
 			} else if field.Type.Kind() == reflect.Func && rv.Elem().FieldByName(field.Name).IsNil() {
 				target := rv.Elem()
-				addCallerToField(target1, &target, &field, methodRef, xmlele)
+				addCallerToField(target1, &target, &field, methodRef, xmlele, entity, false)
 			}
 		}
 	}
@@ -866,69 +897,13 @@ func AddMapperProxyTarget(target1 proxy.ProxyTarger, xml string, entity interfac
 	proxy.AddClassProxy(target1)
 }
 
-func paseEntityType(entity interface{}) *TableDef {
-	ty := reflect.TypeOf(entity).Elem()
-	n := ty.NumField()
-
-	var td TableDef
-	for i := 0; i < n; i++ {
-
-		var tc *TableColumnDef = &TableColumnDef{}
-		td.Columns = append(td.Columns, tc)
-
-		field := ty.Field(i)
-		tc.FieldName = field.Name
-		tc.Field = &field
-
-		if column, ok := field.Tag.Lookup("column"); ok {
-			if column != "" {
-				tc.ColumnName = column
-			}
-		}
-		if id, ok := field.Tag.Lookup("id"); ok {
-			if id != "" {
-				td.IdColumn = tc
-			}
-		}
-
-		tc.Transient = false
-		if transient, ok := field.Tag.Lookup("transient"); ok {
-			if transient == "true" {
-				tc.Transient = true
-			}
-		}
-
-		tc.Updatable = true
-		if updatable, ok := field.Tag.Lookup("updatable"); ok {
-			if updatable == "false" {
-				tc.Updatable = false
-			}
-		}
-		if generationType, ok := field.Tag.Lookup("GenerationType"); ok {
-			if generationType != "" {
-				td.GenerationType = generationType
-			}
-		}
-		if dbname, ok := field.Tag.Lookup("dbname"); ok {
-			if dbname != "" {
-				td.DbName = dbname
-			}
-		}
-		if table, ok := field.Tag.Lookup("table"); ok {
-			if table != "" {
-				td.Name = table
-			}
-		}
-	}
-
-	return &td
-}
-
 func addCallerToField(target1 proxy.ProxyTarger,
 	target *reflect.Value,
 	field *reflect.StructField,
 	methodRef map[string]*proxy.ProxyMethod,
 	xmlele map[string]*MapperElementXml,
+	entityptr interface{},
+	baseMethod bool,
 ) {
 	call := target.FieldByName(field.Name)
 
@@ -957,11 +932,11 @@ func addCallerToField(target1 proxy.ProxyTarger,
 		invoker = newSqlInvoke(target1, target1.ProxyTarget(),
 			methodSetting,
 			xmlele, field.Type.Out(0),
-			providerConfig, defaultReturnValue, structFields)
+			providerConfig, defaultReturnValue, structFields, entityptr, baseMethod)
 	} else {
 		invoker = newSqlInvoke(target1, target1.ProxyTarget(), methodSetting,
 			xmlele, nil,
-			providerConfig, nil, nil)
+			providerConfig, nil, nil, entityptr, baseMethod)
 	}
 
 	proxyCall := func(command *sqlInvoke) reflect.Value {

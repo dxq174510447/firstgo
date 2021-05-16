@@ -6,10 +6,10 @@ import (
 	"firstgo/frame/proxy"
 	"firstgo/povo/po"
 	"firstgo/povo/vo"
-	"reflect"
 )
 
 type UsersDao struct {
+	dbcore.BaseDao
 	Proxy_ *proxy.ProxyClass
 	//test
 	GetById_             func(local *context.LocalStack, id int) (*po.Users, error)
@@ -80,6 +80,37 @@ func (c *UsersDao) InsertBatch(local *context.LocalStack, users []*po.Users) (in
 	return c.InsertBatch_(local, users)
 }
 
+// Get override
+func (c *UsersDao) Get(local *context.LocalStack, id int) (*po.Users, error) {
+	m, err := c.BaseDao.Get(local, id)
+	if err != nil {
+		return nil, err
+	} else {
+		if m == nil {
+			return nil, err
+		}
+		return m.(*po.Users), err
+	}
+}
+
+// Get override
+func (c *UsersDao) Find(local *context.LocalStack, users *po.Users) ([]*po.Users, error) {
+	var result []*po.Users
+	m, err := c.BaseDao.Find(local, users)
+	if err != nil {
+		return result, err
+	} else {
+		if len(m) == 0 {
+			return result, err
+		}
+		result = make([]*po.Users, 0, len(m))
+		for _, e := range m {
+			result = append(result, e.(*po.Users))
+		}
+		return result, nil
+	}
+}
+
 // user case
 func (c *UsersDao) Save1(local *context.LocalStack, data *po.Users) (int, error) {
 	return c.Save1_(local, data)
@@ -119,9 +150,7 @@ func (c *UsersDao) ProxyTarget() *proxy.ProxyClass {
 var usersDao UsersDao = UsersDao{
 	Proxy_: &proxy.ProxyClass{
 		Annotations: []*proxy.AnnotationClass{
-			proxy.NewSingleAnnotation(proxy.AnnotationDao, map[string]interface{}{
-				dbcore.AnnotationDaoEntityTargetTypeValueKey: reflect.TypeOf(&po.Users{}).Elem(),
-			}),
+			proxy.NewSingleAnnotation(proxy.AnnotationDao, nil),
 		},
 		Methods: []*proxy.ProxyMethod{
 			//测试

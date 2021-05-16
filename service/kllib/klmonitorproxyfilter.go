@@ -4,12 +4,12 @@ import (
 	"firstgo/frame/context"
 	"firstgo/frame/http"
 	"firstgo/frame/proxy"
-	"fmt"
-	"github.com/urfave/negroni"
-	"klook.libs/comm"
-	"klook.libs/statsd"
+	//"fmt"
+	//"github.com/urfave/negroni"
+	//"klook.libs/comm"
+	//"klook.libs/statsd"
 	"reflect"
-	"time"
+	//"time"
 )
 
 // KlMonitorProxyFilter aop 拦截controller 监控方法访问
@@ -22,34 +22,34 @@ func (d *KlMonitorProxyFilter) Execute(context *context.LocalStack,
 	methodInfo *proxy.ProxyMethod,
 	invoker *reflect.Value,
 	arg []reflect.Value) []reflect.Value {
-
-	fmt.Printf("KlMonitorProxyFilter begin \n")
-	request := http.GetCurrentHttpRequest(context)
-	response := http.GetCurrentHttpResponse(context)
-	startTime := time.Now()
-	funcName := fmt.Sprintf("%s-%s", classInfo.Name, methodInfo.Name)
-	httpMethod := request.Method
-	klheader := GetCurrentKlHeader(context)
-
-	defer func() {
-		fmt.Printf("KlMonitorProxyFilter end \n")
-
-		duration := time.Since(startTime)
-
-		statsd.HttpHandlerStatsCollector.Collect(negroni.NewResponseWriter(response), request, funcName, klheader.RequestID,
-			startTime, duration, comm.GetPath(request))
-
-		if err := recover(); err != nil {
-			panic(err)
-		}
-	}()
-	statsd.Metrics.Inc(httpMethod, funcName, "")
-
-	result := d.Next.Execute(context, classInfo, methodInfo, invoker, arg)
-
-	statsd.Metrics.Observe(httpMethod, funcName, "", startTime)
-
-	return result
+	return nil
+	//fmt.Printf("KlMonitorProxyFilter begin \n")
+	//request := http.GetCurrentHttpRequest(context)
+	//response := http.GetCurrentHttpResponse(context)
+	//startTime := time.Now()
+	//funcName := fmt.Sprintf("%s-%s", classInfo.Name, methodInfo.Name)
+	//httpMethod := request.Method
+	//klheader := GetCurrentKlHeader(context)
+	//
+	//defer func() {
+	//	fmt.Printf("KlMonitorProxyFilter end \n")
+	//
+	//	duration := time.Since(startTime)
+	//
+	//	statsd.HttpHandlerStatsCollector.Collect(negroni.NewResponseWriter(response), request, funcName, klheader.RequestID,
+	//		startTime, duration, comm.GetPath(request))
+	//
+	//	if err := recover(); err != nil {
+	//		panic(err)
+	//	}
+	//}()
+	//statsd.Metrics.Inc(httpMethod, funcName, "")
+	//
+	//result := d.Next.Execute(context, classInfo, methodInfo, invoker, arg)
+	//
+	//statsd.Metrics.Observe(httpMethod, funcName, "", startTime)
+	//
+	//return result
 }
 
 func (d *KlMonitorProxyFilter) SetNext(next proxy.ProxyFilter) {
@@ -76,5 +76,5 @@ func (d *KlMonitorProxyFilterFactory) AnnotationMatch() []string {
 var klMonitorProxyFilterFactory KlMonitorProxyFilterFactory = KlMonitorProxyFilterFactory{}
 
 func init() {
-	proxy.AddProxyFilterFactory(proxy.ProxyFilterFactory(&klMonitorProxyFilterFactory))
+	//proxy.AddProxyFilterFactory(proxy.ProxyFilterFactory(&klMonitorProxyFilterFactory))
 }

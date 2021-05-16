@@ -1,9 +1,19 @@
 package dbcore
 
-import "reflect"
+import (
+	"firstgo/frame/context"
+	"firstgo/frame/proxy"
+	"reflect"
+)
+
+var BaseProxyTarger *proxy.ProxyClass = &proxy.ProxyClass{}
 
 type BaseDao struct {
-	Save_ func(entity interface{}) (int, error)
+	Save_   func(local *context.LocalStack, entity interface{}) (int, error)
+	Update_ func(local *context.LocalStack, entity interface{}) (int, error)
+	Delete_ func(local *context.LocalStack, id interface{}) (int, error)
+	Get_    func(local *context.LocalStack, id interface{}) (interface{}, error)
+	Find_   func(local *context.LocalStack, entity interface{}) ([]interface{}, error)
 	//Update_ func(entity interface{}) (int,error)
 	//Delete_ func(id interface{}) (int,error)
 	//Get_    func(id interface{}) (interface{},error)
@@ -13,8 +23,26 @@ type BaseDao struct {
 }
 
 // Save entity类型指针
-func (b *BaseDao) Save(entity interface{}) (int, error) {
-	return b.Save_(entity)
+func (b *BaseDao) Save(local *context.LocalStack, entity interface{}) (int, error) {
+	return b.Save_(local, entity)
+}
+
+func (b *BaseDao) Update(local *context.LocalStack, entity interface{}) (int, error) {
+	return b.Update_(local, entity)
+}
+
+func (b *BaseDao) Delete(local *context.LocalStack, id interface{}) (int, error) {
+	return b.Delete_(local, id)
+}
+func (b *BaseDao) Get(local *context.LocalStack, id interface{}) (interface{}, error) {
+	return b.Get_(local, id)
+}
+func (b *BaseDao) Find(local *context.LocalStack, entity interface{}) ([]interface{}, error) {
+	return b.Find_(local, entity)
+}
+
+func (b *BaseDao) ProxyTarget() *proxy.ProxyClass {
+	return BaseProxyTarger
 }
 
 // Update entity类型数指针
