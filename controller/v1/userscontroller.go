@@ -55,7 +55,12 @@ func (c *UsersController) List(local *context.LocalStack, param *vo.UsersParam) 
 }
 
 // ChangeStatus 变更状态
-func (c *UsersController) ChangeStatus(local *context.LocalStack, id int, status int) *vo2.JsonResult {
+func (c *UsersController) ChangeStatus(
+	local *context.LocalStack,
+	id int, status int,
+	requestId int,
+	yid int, ystatus int) *vo2.JsonResult {
+	fmt.Println(id, status, requestId, yid, ystatus)
 	c.ChangeStatus_(local, id, status, c)
 	return util.JsonUtil.BuildJsonSuccess(nil)
 }
@@ -68,43 +73,47 @@ func (c *UsersController) ProxyTarget() *proxy.ProxyClass {
 var userController UsersController = UsersController{
 	Proxy_: &proxy.ProxyClass{
 		Annotations: []*proxy.AnnotationClass{
-			http.NewRestAnnotation("/v1/users", "", "", ""),
+			http.NewRestAnnotation("/v1/users", "", "", "", "", ""),
 		},
 		Methods: []*proxy.ProxyMethod{
 			{
 				Name: "Save",
 				Annotations: []*proxy.AnnotationClass{
-					http.NewRestAnnotation("/", "post", "", ""),
+					http.NewRestAnnotation("/", "post", "", "", "", ""),
 				},
 			},
 			{
 				Name: "Update",
 				Annotations: []*proxy.AnnotationClass{
-					http.NewRestAnnotation("/", "put", "", ""),
+					http.NewRestAnnotation("/", "put", "", "", "", ""),
 				},
 			},
 			{
 				Name: "Delete",
 				Annotations: []*proxy.AnnotationClass{
-					http.NewRestAnnotation("/", "delete", "_,id", ""),
+					http.NewRestAnnotation("/", "delete", "_,id", "", "", ""),
 				},
 			},
 			{
 				Name: "Get",
 				Annotations: []*proxy.AnnotationClass{
-					http.NewRestAnnotation("/", "get", "_,id", ""),
+					http.NewRestAnnotation("/", "get", "_,id", "", "", ""),
 				},
 			},
 			{
 				Name: "List",
 				Annotations: []*proxy.AnnotationClass{
-					http.NewRestAnnotation("/list", "post", "", ""),
+					http.NewRestAnnotation("/list", "post", "", "", "", ""),
 				},
 			},
 			{
 				Name: "ChangeStatus",
 				Annotations: []*proxy.AnnotationClass{
-					http.NewRestAnnotation("/change/status", "post", "_,id,status", ""),
+					http.NewRestAnnotation("/change/{yid}/status/{ystatus}", "post",
+						"_,id,status,_,_,_",
+						"_,_,_,_,yid,ystatus",
+						"_,_,_,requestId,_,_",
+						""),
 				},
 			},
 		},

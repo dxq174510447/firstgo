@@ -23,17 +23,25 @@ type RestAnnotationSetting struct {
 	//http method get,post,put,delete,*
 	HttpMethod string
 
-	//方法对应的request参数名
-	MethodParamter string
+	// 方法对应的request参数名
+	QueryParameter string
+
+	// 路径参数
+	PathVariable string
+
+	// header 参数
+	HeaderParameter string
 
 	//默认的渲染类型 json html 默认是json
 	MethodRender string
 }
 
 type ControllerVar struct {
-	Target             proxy.ProxyTarger
-	PrefixPath         string
-	AbsoluteMethodPath map[string]*proxy.ProxyMethod
+	Target               proxy.ProxyTarger
+	PrefixPath           string
+	AbsoluteMethodPath   map[string]*proxy.ProxyMethod
+	NoAbsoluteMethodPath []*proxy.ProxyMethod
+	NoAbsolutePathTree   *PathNode
 }
 
 type DispatchServlet struct {
@@ -64,11 +72,23 @@ func (d *DispatchServlet) Dispatch(local *context.LocalStack, request *http.Requ
 	httpMethod := strings.ToLower(request.Method)
 	mk := fmt.Sprintf("%s-%s", httpMethod, url)
 
+	// absolutepath
 	if _, ok := controller.AbsoluteMethodPath[mk]; ok {
 		proxyMethod = controller.AbsoluteMethodPath[mk]
 	} else {
 		mk = fmt.Sprintf("%s-%s", "*", url)
 		proxyMethod = controller.AbsoluteMethodPath[mk]
+	}
+
+	// noabsolute path
+	var pathVariableValue map[string]string = make(map[string]string)
+	if proxyMethod == nil {
+		//controller.NoAbsolutePathTree.PrintTree()
+		node, pv := controller.NoAbsolutePathTree.MatchMethod(url)
+		if node != nil {
+			proxyMethod = node.ProxyMethod
+			pathVariableValue = pv
+		}
 	}
 
 	// proxyMethod== nil 404 TODO
@@ -82,9 +102,18 @@ func (d *DispatchServlet) Dispatch(local *context.LocalStack, request *http.Requ
 	if paramlen == 0 {
 		result = methodInvoker.Call([]reflect.Value{})
 	} else {
-		var paramter []string
-		if methodRequestSetting.MethodParamter != "" {
-			paramter = strings.Split(methodRequestSetting.MethodParamter, ",")
+		var queryParameter []string
+		// TODO
+		var pathVariable []string
+		var headerParameter []string
+		if methodRequestSetting.QueryParameter != "" {
+			queryParameter = strings.Split(methodRequestSetting.QueryParameter, ",")
+		}
+		if methodRequestSetting.HeaderParameter != "" {
+			headerParameter = strings.Split(methodRequestSetting.HeaderParameter, ",")
+		}
+		if methodRequestSetting.PathVariable != "" {
+			pathVariable = strings.Split(methodRequestSetting.PathVariable, ",")
 		}
 
 		param := make([]reflect.Value, paramlen)
@@ -115,18 +144,10 @@ func (d *DispatchServlet) Dispatch(local *context.LocalStack, request *http.Requ
 					param[i] = reflect.ValueOf(response)
 				}
 			case reflect.String:
-				var pk string = paramter[i]
-				var pv string = request.FormValue(pk)
-				if pv == "" {
-					pv = request.URL.Query().Get(pk)
-				}
+				pv := getParameterValueFromRequest(request, i, queryParameter, headerParameter, pathVariable, pathVariableValue)
 				param[i] = reflect.ValueOf(pv)
 			case reflect.Int:
-				var pk string = paramter[i]
-				var pv string = request.FormValue(pk)
-				if pv == "" {
-					pv = request.URL.Query().Get(pk)
-				}
+				pv := getParameterValueFromRequest(request, i, queryParameter, headerParameter, pathVariable, pathVariableValue)
 				var pvi int = 0
 				if pv != "" {
 					var err error
@@ -134,8 +155,6 @@ func (d *DispatchServlet) Dispatch(local *context.LocalStack, request *http.Requ
 					if err != nil {
 						panic(fmt.Errorf("string2int error"))
 					}
-				} else {
-					panic(fmt.Errorf("paramter %s get error", pk))
 				}
 				param[i] = reflect.ValueOf(pvi)
 			case reflect.Struct:
@@ -184,7 +203,9 @@ func GetDispatchServlet() *DispatchServlet {
 func AddControllerProxyTarget(target1 proxy.ProxyTarger) {
 	proxy.AddClassProxy(target1)
 
-	var methodRef = make(map[string]*proxy.ProxyMethod)
+	var absoluteMethodPath = make(map[string]*proxy.ProxyMethod)
+	var noAbsoluteMethodPath []*proxy.ProxyMethod
+	var controllerRoot *PathNode = &PathNode{}
 	for _, method := range target1.ProxyTarget().Methods {
 		methodRestSetting := GetRequestAnnotationSetting(method.Annotations)
 		if methodRestSetting == nil {
@@ -203,13 +224,21 @@ func AddControllerProxyTarget(target1 proxy.ProxyTarger) {
 		}
 
 		mkey := fmt.Sprintf("%s-%s", hm, hp)
-		methodRef[mkey] = method
+		if strings.Index(hp, "{") >= 0 || strings.Index(hp, "*") >= 0 {
+			noAbsoluteMethodPath = append(noAbsoluteMethodPath, method)
+			controllerRoot.SetPath(hp, method)
+			controllerRoot.PrintTree()
+		} else {
+			absoluteMethodPath[mkey] = method
+		}
 	}
 	var prefix = GetControllerPathPrefix(&dispatchServlet, target1)
 	invoker := &ControllerVar{
-		Target:             target1,
-		PrefixPath:         prefix,
-		AbsoluteMethodPath: methodRef,
+		Target:               target1,
+		PrefixPath:           prefix,
+		AbsoluteMethodPath:   absoluteMethodPath,
+		NoAbsoluteMethodPath: noAbsoluteMethodPath,
+		NoAbsolutePathTree:   controllerRoot,
 	}
 
 	f := func(invoker1 *ControllerVar) func(http.ResponseWriter, *http.Request) {
@@ -228,4 +257,36 @@ func AddControllerProxyTarget(target1 proxy.ProxyTarger) {
 	}(invoker)
 	http.HandleFunc(prefix+"/", f) //前缀匹配
 	http.HandleFunc(prefix, f)     //绝对匹配
+}
+
+// getParameterValueFromRequest 获取方法常规变量
+func getParameterValueFromRequest(request *http.Request, methodPosition int,
+	queryParameter []string,
+	headerParameter []string,
+	pathVariable []string,
+	pathVariableValue map[string]string,
+) string {
+	if len(queryParameter) > methodPosition && queryParameter[methodPosition] != "" && queryParameter[methodPosition] != "_" {
+		//query parameter
+		var pk string = queryParameter[methodPosition]
+		var pv string = request.FormValue(pk)
+		if pv == "" {
+			pv = request.URL.Query().Get(pk)
+		}
+		return pv
+	}
+	if len(headerParameter) > methodPosition && headerParameter[methodPosition] != "" && headerParameter[methodPosition] != "_" {
+		var pk string = headerParameter[methodPosition]
+		var pv string = request.Header.Get(pk)
+		return pv
+	}
+	if len(pathVariable) > methodPosition && pathVariable[methodPosition] != "" && pathVariable[methodPosition] != "_" {
+		var pk string = pathVariable[methodPosition]
+		if pv, ok := pathVariableValue[pk]; ok {
+			return pv
+		} else {
+			return ""
+		}
+	}
+	return ""
 }

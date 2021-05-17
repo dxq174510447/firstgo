@@ -963,7 +963,7 @@ func NewSqlProvierConfigAnnotation(param string) *proxy.AnnotationClass {
 func parseAndGetSqlVariables(sql string) ([]string, string) {
 	reg := regexp.MustCompile(`(?m)#\{(\S+?)\}`)
 	result := reg.FindAllStringSubmatch(sql, -1)
-	if result != nil {
+	if len(result) > 0 {
 		var r1 []string
 		for _, k := range result {
 			r1 = append(r1, k[1])
