@@ -227,7 +227,7 @@ func AddControllerProxyTarget(target1 proxy.ProxyTarger) {
 		if strings.Index(hp, "{") >= 0 || strings.Index(hp, "*") >= 0 {
 			noAbsoluteMethodPath = append(noAbsoluteMethodPath, method)
 			controllerRoot.SetPath(hp, method)
-			controllerRoot.PrintTree()
+			// controllerRoot.PrintTree()
 		} else {
 			absoluteMethodPath[mkey] = method
 		}
