@@ -1,9 +1,9 @@
 package kllib
 
 import (
-	"firstgo/frame/context"
-	"firstgo/frame/http"
-	"firstgo/frame/proxy"
+	"github.com/dxq174510447/goframe/lib/frame/context"
+	"github.com/dxq174510447/goframe/lib/frame/http"
+	"github.com/dxq174510447/goframe/lib/frame/proxy"
 	//"fmt"
 	//"github.com/urfave/negroni"
 	//"klook.libs/comm"

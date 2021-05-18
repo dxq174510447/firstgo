@@ -1,11 +1,11 @@
 package httpfilter
 
 import (
-	"firstgo/frame/context"
-	http2 "firstgo/frame/http"
 	"firstgo/povo/po"
 	"firstgo/util"
 	"fmt"
+	context "github.com/dxq174510447/goframe/lib/frame/context"
+	http2 "github.com/dxq174510447/goframe/lib/frame/http"
 	"net/http"
 )
 

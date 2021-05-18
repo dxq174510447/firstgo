@@ -1,8 +1,8 @@
 package kllib
 
 import (
-	"firstgo/frame/context"
 	"firstgo/service/kllib/vo"
+	context "github.com/dxq174510447/goframe/lib/frame/context"
 )
 
 // 常量

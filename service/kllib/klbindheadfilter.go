@@ -1,10 +1,10 @@
 package kllib
 
 import (
-	"firstgo/frame/context"
-	http2 "firstgo/frame/http"
 	"firstgo/service/kllib/vo"
 	"firstgo/util"
+	context "github.com/dxq174510447/goframe/lib/frame/context"
+	http2 "github.com/dxq174510447/goframe/lib/frame/http"
 	"net/http"
 	"strings"
 )

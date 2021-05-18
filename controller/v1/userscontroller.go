@@ -1,15 +1,15 @@
 package v1
 
 import (
-	"firstgo/frame/context"
-	"firstgo/frame/http"
-	"firstgo/frame/proxy"
-	vo2 "firstgo/frame/vo"
 	"firstgo/povo/po"
 	"firstgo/povo/vo"
 	"firstgo/service/impl"
 	"firstgo/util"
 	"fmt"
+	"github.com/dxq174510447/goframe/lib/frame/context"
+	"github.com/dxq174510447/goframe/lib/frame/http"
+	"github.com/dxq174510447/goframe/lib/frame/proxy"
+	vo2 "github.com/dxq174510447/goframe/lib/frame/vo"
 )
 
 // UsersController 不要直接初始化 首字母大写代表类
@@ -73,7 +73,7 @@ func (c *UsersController) ProxyTarget() *proxy.ProxyClass {
 var userController UsersController = UsersController{
 	Proxy_: &proxy.ProxyClass{
 		Annotations: []*proxy.AnnotationClass{
-			http.NewRestAnnotation("/v1/users", "", "", "", "", ""),
+			http.NewRestAnnotation(util.ConfigUtil.WrapServletPath("/v1/users"), "", "", "", "", ""),
 		},
 		Methods: []*proxy.ProxyMethod{
 			{

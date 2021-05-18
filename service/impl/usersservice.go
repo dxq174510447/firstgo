@@ -2,12 +2,12 @@ package impl
 
 import (
 	"firstgo/dao"
-	"firstgo/frame/context"
-	"firstgo/frame/db/dbcore"
-	"firstgo/frame/exception"
-	"firstgo/frame/proxy"
 	"firstgo/povo/po"
 	"firstgo/povo/vo"
+	context "github.com/dxq174510447/goframe/lib/frame/context"
+	dbcore "github.com/dxq174510447/goframe/lib/frame/db/dbcore"
+	exception "github.com/dxq174510447/goframe/lib/frame/exception"
+	proxy "github.com/dxq174510447/goframe/lib/frame/proxy"
 )
 
 type UsersService struct {

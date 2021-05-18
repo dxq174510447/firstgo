@@ -1,11 +1,11 @@
 package dao
 
 import (
-	"firstgo/frame/context"
-	"firstgo/frame/db/dbcore"
-	_ "firstgo/frame/db/filter"
 	"firstgo/povo/po"
 	"fmt"
+	"github.com/dxq174510447/goframe/lib/frame/context"
+	"github.com/dxq174510447/goframe/lib/frame/db/dbcore"
+	_ "github.com/dxq174510447/goframe/lib/frame/db/filter"
 	"testing"
 	"time"
 )

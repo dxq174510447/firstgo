@@ -1,11 +1,11 @@
 package dao
 
 import (
-	"firstgo/frame/context"
-	"firstgo/frame/db/dbcore"
-	"firstgo/frame/proxy"
 	"firstgo/povo/po"
 	"firstgo/povo/vo"
+	"github.com/dxq174510447/goframe/lib/frame/context"
+	"github.com/dxq174510447/goframe/lib/frame/db/dbcore"
+	"github.com/dxq174510447/goframe/lib/frame/proxy"
 )
 
 type UsersDao struct {
