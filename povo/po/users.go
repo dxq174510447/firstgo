@@ -2,6 +2,7 @@ package po
 
 import "time"
 
+// AUTO
 //Indicates that the persistence provider should pick an appropriate strategy for the particular database.
 //IDENTITY
 //Indicates that the persistence provider must assign primary keys for the entity using a database identity column.
