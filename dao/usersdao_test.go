@@ -2,6 +2,8 @@ package dao
 
 import (
 	"firstgo/povo/po"
+	"firstgo/povo/vo"
+	"firstgo/util"
 	"fmt"
 	"github.com/dxq174510447/goframe/lib/frame/context"
 	"github.com/dxq174510447/goframe/lib/frame/db/dbcore"
@@ -20,6 +22,12 @@ func printRow(v *po.Users) {
 		dbcore.GetSqlNullTypeValue(v.FeeStatus),
 		dbcore.GetSqlNullTypeValue(v.CreateDate),
 		dbcore.GetSqlNullTypeValue(v.CreateTime))
+}
+
+func printRow1(v *vo.QueryResult) {
+	fmt.Println("-->",
+		v.Id,
+		v.CompanyId)
 }
 
 func ATestUsersDao_FindIds(t *testing.T) {
@@ -215,18 +223,19 @@ func ATestUsersDao_InsertBatch(t *testing.T) {
 	}
 }
 
-func ATestUsersDao_Save(t *testing.T) {
+func TestUsersDao_Save(t *testing.T) {
 	local := context.NewLocalStack()
 
 	n := time.Now()
 	//m5, err5 := GetUsersDao().Save(local, &po.Users{Name: "new22", Status: 1, Fee: 333.333, CreateTime: &n, CreateDate: &n})
-	m5, err5 := GetUsersDao().Save(local, &po.Users{Name: "new22", Fee: 333.333, CreateDate: &n})
+	u := &po.Users{Name: "new222", Fee: 333.333, CreateDate: &n}
+	_, err5 := GetUsersDao().Save(local, u)
 
 	if err5 != nil {
 		fmt.Println(err5)
 		panic(err5)
 	} else {
-		fmt.Println("result", m5)
+		fmt.Println("result", u)
 	}
 }
 
@@ -280,7 +289,7 @@ func ATestUsersDao_Get(t *testing.T) {
 	}
 }
 
-func TestUsersDao_Find(t *testing.T) {
+func ATestUsersDao_Find(t *testing.T) {
 	local := context.NewLocalStack()
 
 	//n := time.Now()
@@ -299,4 +308,40 @@ func TestUsersDao_Find(t *testing.T) {
 			}
 		}
 	}
+}
+
+func TestUsersDao_QueryAddon(t *testing.T) {
+	local := context.NewLocalStack()
+
+	//n := time.Now()
+	//m5, err5 := GetUsersDao().Save(local, &po.Users{Name: "new22", Status: 1, Fee: 333.333, CreateTime: &n, CreateDate: &n})
+	p := &vo.QueryAddon{}
+	p.AddonTitle = "入职办理"
+	m5, err5 := GetUsersDao().QueryAddon(local, p)
+
+	if err5 != nil {
+		fmt.Println(err5)
+		panic(err5)
+	} else {
+		if len(m5) == 0 {
+			fmt.Println("result length 0")
+		} else {
+			for _, r := range m5 {
+				printRow1(r)
+			}
+		}
+	}
+}
+
+func init() {
+	// 初始化默认数据源
+	var defaultFactory dbcore.DatabaseFactory = dbcore.DatabaseFactory{
+		DbUser: util.ConfigUtil.Get("DB_USER", "platform"),
+		DbPwd:  util.ConfigUtil.Get("DB_PASSWORD", "xxcxcx"),
+		DbName: util.ConfigUtil.Get("DB_NAME", "plat_base1"),
+		DbPort: util.ConfigUtil.Get("DB_PORT", "3306"),
+		DbHost: util.ConfigUtil.Get("DB_HOST", "rm-bp1thh63s5tx33q0kio.mysql.rds.aliyuncs.com"),
+	}
+	db := defaultFactory.NewDatabase()
+	dbcore.AddDatabaseRouter(dbcore.DataBaseDefaultKey, db)
 }

@@ -35,6 +35,7 @@ type UsersDao struct {
 	List1_                func(local *context.LocalStack, param *vo.UsersParam) (*vo.UsersPage, error)
 	FindByNameExcludeId1_ func(local *context.LocalStack, name string, id int) (int, error)
 	FindByName1_          func(local *context.LocalStack, name string) (int, error)
+	QueryAddon_           func(local *context.LocalStack, users *vo.QueryAddon) ([]*vo.QueryResult, error)
 }
 
 // 测试案例
@@ -78,6 +79,10 @@ func (c *UsersDao) InsertSingle(local *context.LocalStack, users *po.Users) (int
 }
 func (c *UsersDao) InsertBatch(local *context.LocalStack, users []*po.Users) (int, error) {
 	return c.InsertBatch_(local, users)
+}
+
+func (c *UsersDao) QueryAddon(local *context.LocalStack, users *vo.QueryAddon) ([]*vo.QueryResult, error) {
+	return c.QueryAddon_(local, users)
 }
 
 // Get override
