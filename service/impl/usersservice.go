@@ -4,6 +4,7 @@ import (
 	"firstgo/dao"
 	"firstgo/povo/po"
 	"firstgo/povo/vo"
+	"github.com/dxq174510447/goframe/lib/frame/application"
 	context "github.com/dxq174510447/goframe/lib/frame/context"
 	dbcore "github.com/dxq174510447/goframe/lib/frame/db/dbcore"
 	exception "github.com/dxq174510447/goframe/lib/frame/exception"
@@ -122,10 +123,5 @@ func GetUsersService() *UsersService {
 }
 
 func init() {
-
-	proxy.AddClassProxy(proxy.ProxyTarger(&usersService))
-
-	// 初始化
-	usersService.usersDao = dao.GetUsersDao()
-
+	application.AddProxyInstance("", proxy.ProxyTarger(&usersService))
 }

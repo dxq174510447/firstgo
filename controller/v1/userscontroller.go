@@ -6,6 +6,7 @@ import (
 	"firstgo/service/impl"
 	"firstgo/util"
 	"fmt"
+	"github.com/dxq174510447/goframe/lib/frame/application"
 	"github.com/dxq174510447/goframe/lib/frame/context"
 	"github.com/dxq174510447/goframe/lib/frame/http"
 	"github.com/dxq174510447/goframe/lib/frame/proxy"
@@ -162,8 +163,5 @@ func GetUserController() *UsersController {
 }
 
 func init() {
-	http.AddControllerProxyTarget(proxy.ProxyTarger(&userController))
-	// 初始化
-	userController.usersService = impl.GetUsersService()
-
+	application.AddProxyInstance("", proxy.ProxyTarger(&userController))
 }

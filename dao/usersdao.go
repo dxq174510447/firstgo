@@ -3,6 +3,7 @@ package dao
 import (
 	"firstgo/povo/po"
 	"firstgo/povo/vo"
+	"github.com/dxq174510447/goframe/lib/frame/application"
 	"github.com/dxq174510447/goframe/lib/frame/context"
 	"github.com/dxq174510447/goframe/lib/frame/db/dbcore"
 	"github.com/dxq174510447/goframe/lib/frame/proxy"
@@ -250,5 +251,5 @@ func GetUsersDao() *UsersDao {
 }
 
 func init() {
-	dbcore.AddMapperProxyTarget(proxy.ProxyTarger(&usersDao), UsersXml, &po.Users{})
+	application.AddProxyInstance("", proxy.ProxyTarger(&usersDao))
 }
