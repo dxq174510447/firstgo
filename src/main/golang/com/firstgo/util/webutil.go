@@ -1,7 +1,7 @@
 package util
 
 import (
-	"firstgo/povo/po"
+	"firstgo/src/main/golang/com/firstgo/povo/po"
 	"fmt"
 	"github.com/dxq174510447/goframe/lib/frame/context"
 	uuid "github.com/nu7hatch/gouuid"

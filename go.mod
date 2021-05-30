@@ -9,5 +9,5 @@ require (
 )
 
 replace (
-	github.com/dxq174510447/goframe v0.0.0-20210518091643-373ac28ecaad => /Users/klook/code/mine/goframe
+	github.com/dxq174510447/goframe v0.0.0-20210518091643-373ac28ecaad => /Users/dengxiaoqian/data/mine/goframe
 )

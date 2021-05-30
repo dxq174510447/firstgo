@@ -1,19 +1,19 @@
 package impl
 
 import (
-	"firstgo/dao"
-	"firstgo/povo/po"
-	"firstgo/povo/vo"
+	"firstgo/src/main/golang/com/firstgo/dao"
+	"firstgo/src/main/golang/com/firstgo/povo/po"
+	"firstgo/src/main/golang/com/firstgo/povo/vo"
 	"github.com/dxq174510447/goframe/lib/frame/application"
 	context "github.com/dxq174510447/goframe/lib/frame/context"
 	dbcore "github.com/dxq174510447/goframe/lib/frame/db/dbcore"
 	exception "github.com/dxq174510447/goframe/lib/frame/exception"
-	proxy "github.com/dxq174510447/goframe/lib/frame/proxy"
+	"github.com/dxq174510447/goframe/lib/frame/proxy/proxyclass"
 )
 
 type UsersService struct {
 	usersDao      *dao.UsersDao
-	Proxy_        *proxy.ProxyClass
+	Proxy_        *proxyclass.ProxyClass
 	Save_         func(local *context.LocalStack, data *po.Users, self *UsersService) (*vo.UsersVo, error)
 	Update_       func(local *context.LocalStack, data *po.Users, self *UsersService) (*vo.UsersVo, error)
 	Delete_       func(local *context.LocalStack, id int, self *UsersService) (int, error)
@@ -45,38 +45,38 @@ func (c *UsersService) List(local *context.LocalStack, param *vo.UsersParam) (*v
 	return c.List_(local, param, c)
 }
 
-func (c *UsersService) ProxyTarget() *proxy.ProxyClass {
+func (c *UsersService) ProxyTarget() *proxyclass.ProxyClass {
 	return c.Proxy_
 }
 
 var usersService UsersService = UsersService{
-	Proxy_: &proxy.ProxyClass{
-		Annotations: []*proxy.AnnotationClass{
-			proxy.NewSingleAnnotation(proxy.AnnotationService, nil),
+	Proxy_: &proxyclass.ProxyClass{
+		Annotations: []*proxyclass.AnnotationClass{
+			proxyclass.NewSingleAnnotation(proxyclass.AnnotationService, nil),
 		},
-		Methods: []*proxy.ProxyMethod{
-			&proxy.ProxyMethod{
+		Methods: []*proxyclass.ProxyMethod{
+			&proxyclass.ProxyMethod{
 				Name: "Save",
-				Annotations: []*proxy.AnnotationClass{
-					proxy.NewSingleAnnotation(dbcore.TransactionRequire, nil),
+				Annotations: []*proxyclass.AnnotationClass{
+					proxyclass.NewSingleAnnotation(dbcore.TransactionRequire, nil),
 				},
 			},
-			&proxy.ProxyMethod{
+			&proxyclass.ProxyMethod{
 				Name: "Update",
-				Annotations: []*proxy.AnnotationClass{
-					proxy.NewSingleAnnotation(dbcore.TransactionRequire, nil),
+				Annotations: []*proxyclass.AnnotationClass{
+					proxyclass.NewSingleAnnotation(dbcore.TransactionRequire, nil),
 				},
 			},
-			&proxy.ProxyMethod{
+			&proxyclass.ProxyMethod{
 				Name: "Delete",
-				Annotations: []*proxy.AnnotationClass{
-					proxy.NewSingleAnnotation(dbcore.TransactionRequire, nil),
+				Annotations: []*proxyclass.AnnotationClass{
+					proxyclass.NewSingleAnnotation(dbcore.TransactionRequire, nil),
 				},
 			},
-			&proxy.ProxyMethod{
+			&proxyclass.ProxyMethod{
 				Name: "ChangeStatus",
-				Annotations: []*proxy.AnnotationClass{
-					proxy.NewSingleAnnotation(dbcore.TransactionRequire, nil),
+				Annotations: []*proxyclass.AnnotationClass{
+					proxyclass.NewSingleAnnotation(dbcore.TransactionRequire, nil),
 				},
 			},
 		},
@@ -105,7 +105,7 @@ var usersService UsersService = UsersService{
 			panic(exception.NewException(502, "名称重复"))
 		}
 
-		self.usersDao.Save1(local, data)
+		self.usersDao.Save(local, data)
 
 		if data.Status == -1 {
 			panic(exception.NewException(502, "状态不正确"))
@@ -123,5 +123,6 @@ func GetUsersService() *UsersService {
 }
 
 func init() {
-	application.AddProxyInstance("", proxy.ProxyTarger(&usersService))
+	application.AddProxyInstance("", proxyclass.ProxyTarger(&usersService))
+	usersService.usersDao = dao.GetUsersDao()
 }
