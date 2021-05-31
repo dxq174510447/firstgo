@@ -1,11 +1,13 @@
 package httpfilter
 
 import (
-	"firstgo/povo/po"
-	"firstgo/util"
+	"firstgo/src/main/golang/com/firstgo/povo/po"
+	"firstgo/src/main/golang/com/firstgo/util"
 	"fmt"
+	"github.com/dxq174510447/goframe/lib/frame/application"
 	context "github.com/dxq174510447/goframe/lib/frame/context"
 	http2 "github.com/dxq174510447/goframe/lib/frame/http"
+	"github.com/dxq174510447/goframe/lib/frame/proxy/proxyclass"
 	"net/http"
 )
 
@@ -34,6 +36,10 @@ func (b *BindUserFilter) Order() int {
 	return 10
 }
 
+func (b *BindUserFilter) ProxyTarget() *proxyclass.ProxyClass {
+	return nil
+}
+
 var bindUserFilter BindUserFilter = BindUserFilter{}
 
 func getUsersByToken(token string) *po.Users {
@@ -44,5 +50,5 @@ func getUsersByToken(token string) *po.Users {
 }
 
 func init() {
-	http2.AddFilter(http2.Filter(&bindUserFilter))
+	application.AddProxyInstance("", proxyclass.ProxyTarger(&bindUserFilter))
 }

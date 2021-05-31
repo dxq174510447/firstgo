@@ -109,7 +109,7 @@ const UsersXml = `
 	</update>
 
 	<select id="List1">
-		select * from users
+		select * from users limit #{Page},#{PageSize}
 	</select>
 
 	<select id="FindByNameExcludeId1">
@@ -118,6 +118,19 @@ const UsersXml = `
 
 	<select id="FindByName1">
 		select count(*) from users where name = #{name}
+	</select>
+
+	<select id="QueryAddon">
+		select a.id_,a.company_id_ from base_business a,base_business_add b
+			where a.id_ = b.BUSINESS_ID_
+			and a.DEPARTMENT_ID_ = 1
+			{{if .CheckType}}
+			and a.STATUS_ = #{CheckType}
+			{{end}}
+			{{if .AddonTitle}}
+			and a.NAME_ like #{AddonTitle}
+			{{end}}
+			limit 0,10
 	</select>
 </mapper>
 

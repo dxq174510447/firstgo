@@ -1,16 +1,17 @@
 package dao
 
 import (
-	"firstgo/povo/po"
-	"firstgo/povo/vo"
+	"firstgo/src/main/golang/com/firstgo/povo/po"
+	"firstgo/src/main/golang/com/firstgo/povo/vo"
+	"github.com/dxq174510447/goframe/lib/frame/application"
 	"github.com/dxq174510447/goframe/lib/frame/context"
 	"github.com/dxq174510447/goframe/lib/frame/db/dbcore"
-	"github.com/dxq174510447/goframe/lib/frame/proxy"
+	"github.com/dxq174510447/goframe/lib/frame/proxy/proxyclass"
 )
 
 type UsersDao struct {
 	dbcore.BaseDao
-	Proxy_ *proxy.ProxyClass
+	Proxy_ *proxyclass.ProxyClass
 	//test
 	GetById_             func(local *context.LocalStack, id int) (*po.Users, error)
 	FindByNameAndStatus_ func(local *context.LocalStack, name string, status int, statusList []string) ([]*po.Users, error)
@@ -35,6 +36,7 @@ type UsersDao struct {
 	List1_                func(local *context.LocalStack, param *vo.UsersParam) (*vo.UsersPage, error)
 	FindByNameExcludeId1_ func(local *context.LocalStack, name string, id int) (int, error)
 	FindByName1_          func(local *context.LocalStack, name string) (int, error)
+	QueryAddon_           func(local *context.LocalStack, users *vo.QueryAddon) ([]*vo.QueryResult, error)
 }
 
 // 测试案例
@@ -78,6 +80,10 @@ func (c *UsersDao) InsertSingle(local *context.LocalStack, users *po.Users) (int
 }
 func (c *UsersDao) InsertBatch(local *context.LocalStack, users []*po.Users) (int, error) {
 	return c.InsertBatch_(local, users)
+}
+
+func (c *UsersDao) QueryAddon(local *context.LocalStack, users *vo.QueryAddon) ([]*vo.QueryResult, error) {
+	return c.QueryAddon_(local, users)
 }
 
 // Get override
@@ -143,96 +149,96 @@ func (c *UsersDao) FindByName1(local *context.LocalStack, name string) (int, err
 	return c.FindByName1_(local, name)
 }
 
-func (c *UsersDao) ProxyTarget() *proxy.ProxyClass {
+func (c *UsersDao) ProxyTarget() *proxyclass.ProxyClass {
 	return c.Proxy_
 }
 
 var usersDao UsersDao = UsersDao{
-	Proxy_: &proxy.ProxyClass{
-		Annotations: []*proxy.AnnotationClass{
-			proxy.NewSingleAnnotation(proxy.AnnotationDao, nil),
+	Proxy_: &proxyclass.ProxyClass{
+		Annotations: []*proxyclass.AnnotationClass{
+			dbcore.NewDaoAnnotation(UsersXml, &po.Users{}),
 		},
-		Methods: []*proxy.ProxyMethod{
+		Methods: []*proxyclass.ProxyMethod{
 			//测试
 			{
 				Name: "GetById",
-				Annotations: []*proxy.AnnotationClass{
+				Annotations: []*proxyclass.AnnotationClass{
 					dbcore.NewSqlProvierConfigAnnotation("_,id"),
 				},
 			},
 			{
 				Name: "FindByNameAndStatus",
-				Annotations: []*proxy.AnnotationClass{
+				Annotations: []*proxyclass.AnnotationClass{
 					dbcore.NewSqlProvierConfigAnnotation("_,name,status,statusList"),
 				},
 			},
 			{
 				Name: "UpdateNameByField",
-				Annotations: []*proxy.AnnotationClass{
+				Annotations: []*proxyclass.AnnotationClass{
 					dbcore.NewSqlProvierConfigAnnotation("_,name,id"),
-					proxy.NewSingleAnnotation(dbcore.TransactionRequire, nil),
+					proxyclass.NewSingleAnnotation(dbcore.TransactionRequire, nil),
 				},
 			},
 			{
 				Name: "UpdateNameByEntity",
-				Annotations: []*proxy.AnnotationClass{
-					proxy.NewSingleAnnotation(dbcore.TransactionRequire, nil),
+				Annotations: []*proxyclass.AnnotationClass{
+					proxyclass.NewSingleAnnotation(dbcore.TransactionRequire, nil),
 				},
 			},
 			{
 				Name: "DeleteNameByField",
-				Annotations: []*proxy.AnnotationClass{
+				Annotations: []*proxyclass.AnnotationClass{
 					dbcore.NewSqlProvierConfigAnnotation("_,name,id"),
-					proxy.NewSingleAnnotation(dbcore.TransactionRequire, nil),
+					proxyclass.NewSingleAnnotation(dbcore.TransactionRequire, nil),
 				},
 			},
 			{
 				Name: "DeleteNameByEntity",
-				Annotations: []*proxy.AnnotationClass{
-					proxy.NewSingleAnnotation(dbcore.TransactionRequire, nil),
+				Annotations: []*proxyclass.AnnotationClass{
+					proxyclass.NewSingleAnnotation(dbcore.TransactionRequire, nil),
 				},
 			},
 			{
 				Name: "InsertSingle",
-				Annotations: []*proxy.AnnotationClass{
-					proxy.NewSingleAnnotation(dbcore.TransactionRequire, nil),
+				Annotations: []*proxyclass.AnnotationClass{
+					proxyclass.NewSingleAnnotation(dbcore.TransactionRequire, nil),
 				},
 			},
 			{
 				Name: "InsertBatch",
-				Annotations: []*proxy.AnnotationClass{
+				Annotations: []*proxyclass.AnnotationClass{
 					dbcore.NewSqlProvierConfigAnnotation("_,values"),
-					proxy.NewSingleAnnotation(dbcore.TransactionRequire, nil),
+					proxyclass.NewSingleAnnotation(dbcore.TransactionRequire, nil),
 				},
 			},
 			//users
 			{
 				Name: "Delete1",
-				Annotations: []*proxy.AnnotationClass{
+				Annotations: []*proxyclass.AnnotationClass{
 					dbcore.NewSqlProvierConfigAnnotation("_,id"),
 				},
 			},
 			{
 				Name: "Get1",
-				Annotations: []*proxy.AnnotationClass{
+				Annotations: []*proxyclass.AnnotationClass{
 					dbcore.NewSqlProvierConfigAnnotation("_,id"),
 				},
 			},
 			{
 				Name: "ChangeStatus1",
-				Annotations: []*proxy.AnnotationClass{
+				Annotations: []*proxyclass.AnnotationClass{
 					dbcore.NewSqlProvierConfigAnnotation("_,id,status"),
 				},
 			},
 			{
 				Name: "FindByNameExcludeId1",
-				Annotations: []*proxy.AnnotationClass{
+				Annotations: []*proxyclass.AnnotationClass{
 					dbcore.NewSqlProvierConfigAnnotation("_,name,id"),
 				},
 			},
 			{
 				Name: "FindByName1",
-				Annotations: []*proxy.AnnotationClass{
+				Annotations: []*proxyclass.AnnotationClass{
 					dbcore.NewSqlProvierConfigAnnotation("_,name"),
 				},
 			},
@@ -245,5 +251,5 @@ func GetUsersDao() *UsersDao {
 }
 
 func init() {
-	dbcore.AddMapperProxyTarget(proxy.ProxyTarger(&usersDao), UsersXml, &po.Users{})
+	application.AddProxyInstance("", proxyclass.ProxyTarger(&usersDao))
 }

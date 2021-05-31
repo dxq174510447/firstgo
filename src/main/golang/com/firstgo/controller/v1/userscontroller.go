@@ -1,21 +1,22 @@
 package v1
 
 import (
-	"firstgo/povo/po"
-	"firstgo/povo/vo"
-	"firstgo/service/impl"
-	"firstgo/util"
+	"firstgo/src/main/golang/com/firstgo/povo/po"
+	"firstgo/src/main/golang/com/firstgo/povo/vo"
+	"firstgo/src/main/golang/com/firstgo/service/impl"
+	"firstgo/src/main/golang/com/firstgo/util"
 	"fmt"
+	"github.com/dxq174510447/goframe/lib/frame/application"
 	"github.com/dxq174510447/goframe/lib/frame/context"
 	"github.com/dxq174510447/goframe/lib/frame/http"
-	"github.com/dxq174510447/goframe/lib/frame/proxy"
+	"github.com/dxq174510447/goframe/lib/frame/proxy/proxyclass"
 	vo2 "github.com/dxq174510447/goframe/lib/frame/vo"
 )
 
 // UsersController 不要直接初始化 首字母大写代表类
 type UsersController struct {
 	usersService  *impl.UsersService
-	Proxy_        *proxy.ProxyClass
+	Proxy_        *proxyclass.ProxyClass
 	Save_         func(local *context.LocalStack, param *vo.UsersAdd, self *UsersController) *vo.UsersVo
 	Update_       func(local *context.LocalStack, param *vo.UsersEdit, self *UsersController) *vo.UsersVo
 	Delete_       func(local *context.LocalStack, id int, self *UsersController)
@@ -65,50 +66,50 @@ func (c *UsersController) ChangeStatus(
 	return util.JsonUtil.BuildJsonSuccess(nil)
 }
 
-func (c *UsersController) ProxyTarget() *proxy.ProxyClass {
+func (c *UsersController) ProxyTarget() *proxyclass.ProxyClass {
 	return c.Proxy_
 }
 
 // UsersControllerImpl 控制器单例
 var userController UsersController = UsersController{
-	Proxy_: &proxy.ProxyClass{
-		Annotations: []*proxy.AnnotationClass{
+	Proxy_: &proxyclass.ProxyClass{
+		Annotations: []*proxyclass.AnnotationClass{
 			http.NewRestAnnotation(util.ConfigUtil.WrapServletPath("/v1/users"), "", "", "", "", ""),
 		},
-		Methods: []*proxy.ProxyMethod{
+		Methods: []*proxyclass.ProxyMethod{
 			{
 				Name: "Save",
-				Annotations: []*proxy.AnnotationClass{
+				Annotations: []*proxyclass.AnnotationClass{
 					http.NewRestAnnotation("/", "post", "", "", "", ""),
 				},
 			},
 			{
 				Name: "Update",
-				Annotations: []*proxy.AnnotationClass{
+				Annotations: []*proxyclass.AnnotationClass{
 					http.NewRestAnnotation("/", "put", "", "", "", ""),
 				},
 			},
 			{
 				Name: "Delete",
-				Annotations: []*proxy.AnnotationClass{
+				Annotations: []*proxyclass.AnnotationClass{
 					http.NewRestAnnotation("/", "delete", "_,id", "", "", ""),
 				},
 			},
 			{
 				Name: "Get",
-				Annotations: []*proxy.AnnotationClass{
+				Annotations: []*proxyclass.AnnotationClass{
 					http.NewRestAnnotation("/", "get", "_,id", "", "", ""),
 				},
 			},
 			{
 				Name: "List",
-				Annotations: []*proxy.AnnotationClass{
+				Annotations: []*proxyclass.AnnotationClass{
 					http.NewRestAnnotation("/list", "post", "", "", "", ""),
 				},
 			},
 			{
 				Name: "ChangeStatus",
-				Annotations: []*proxy.AnnotationClass{
+				Annotations: []*proxyclass.AnnotationClass{
 					http.NewRestAnnotation("/change/{yid}/status/{ystatus}", "post",
 						"_,id,status,_,_,_",
 						"_,_,_,_,yid,ystatus",
@@ -136,6 +137,7 @@ var userController UsersController = UsersController{
 		util.JsonUtil.Copy(param, data)
 
 		result, _ := self.usersService.Save(local, data)
+		fmt.Println(data.Id)
 		return result
 	},
 	Get_: func(local *context.LocalStack, id int, self *UsersController) *vo.UsersVo {
@@ -162,8 +164,6 @@ func GetUserController() *UsersController {
 }
 
 func init() {
-	http.AddControllerProxyTarget(proxy.ProxyTarger(&userController))
-	// 初始化
+	application.AddProxyInstance("", proxyclass.ProxyTarger(&userController))
 	userController.usersService = impl.GetUsersService()
-
 }

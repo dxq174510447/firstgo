@@ -37,3 +37,15 @@ type Users struct {
 	CreateTime *time.Time `column:"create_time"  columnDefinition:"" json:"create_time,omitempty"`
 	NameIn     []string   `transient:"true" json:"name_in,omitempty"`
 }
+
+type User struct {
+	Id         string
+	Name       string
+	Password   string
+	Status     string
+	Fee        string
+	FeeStatus  string
+	FeeTotal   string
+	CreateDate string
+	CreateTime string
+}
