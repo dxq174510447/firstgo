@@ -246,10 +246,6 @@ var usersDao UsersDao = UsersDao{
 	},
 }
 
-func GetUsersDao() *UsersDao {
-	return &usersDao
-}
-
 func init() {
 	application.AddProxyInstance("", proxyclass.ProxyTarger(&usersDao))
 }

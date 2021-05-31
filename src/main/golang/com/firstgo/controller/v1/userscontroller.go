@@ -15,14 +15,14 @@ import (
 
 // UsersController 不要直接初始化 首字母大写代表类
 type UsersController struct {
-	usersService  *impl.UsersService
-	Proxy_        *proxyclass.ProxyClass
-	Save_         func(local *context.LocalStack, param *vo.UsersAdd, self *UsersController) *vo.UsersVo
-	Update_       func(local *context.LocalStack, param *vo.UsersEdit, self *UsersController) *vo.UsersVo
-	Delete_       func(local *context.LocalStack, id int, self *UsersController)
-	Get_          func(local *context.LocalStack, id int, self *UsersController) *vo.UsersVo
-	List_         func(local *context.LocalStack, param *vo.UsersParam, self *UsersController) *vo.UsersPage
-	ChangeStatus_ func(local *context.LocalStack, id int, status int, self *UsersController)
+	UsersServiceImpl *impl.UsersService `FrameAutowired:""`
+	Proxy_           *proxyclass.ProxyClass
+	Save_            func(local *context.LocalStack, param *vo.UsersAdd, self *UsersController) *vo.UsersVo
+	Update_          func(local *context.LocalStack, param *vo.UsersEdit, self *UsersController) *vo.UsersVo
+	Delete_          func(local *context.LocalStack, id int, self *UsersController)
+	Get_             func(local *context.LocalStack, id int, self *UsersController) *vo.UsersVo
+	List_            func(local *context.LocalStack, param *vo.UsersParam, self *UsersController) *vo.UsersPage
+	ChangeStatus_    func(local *context.LocalStack, id int, status int, self *UsersController)
 }
 
 // Save 新增
@@ -120,7 +120,7 @@ var userController UsersController = UsersController{
 		},
 	},
 	List_: func(local *context.LocalStack, param *vo.UsersParam, self *UsersController) *vo.UsersPage {
-		result, _ := self.usersService.List(local, param)
+		result, _ := self.UsersServiceImpl.List(local, param)
 		return result
 	},
 	Save_: func(local *context.LocalStack, param *vo.UsersAdd, self *UsersController) *vo.UsersVo {
@@ -136,34 +136,29 @@ var userController UsersController = UsersController{
 		var data *po.Users = &po.Users{}
 		util.JsonUtil.Copy(param, data)
 
-		result, _ := self.usersService.Save(local, data)
+		result, _ := self.UsersServiceImpl.Save(local, data)
 		fmt.Println(data.Id)
 		return result
 	},
 	Get_: func(local *context.LocalStack, id int, self *UsersController) *vo.UsersVo {
-		result, _ := self.usersService.Get(local, id)
+		result, _ := self.UsersServiceImpl.Get(local, id)
 		return result
 	},
 	Delete_: func(local *context.LocalStack, id int, self *UsersController) {
-		self.usersService.Delete(local, id)
+		self.UsersServiceImpl.Delete(local, id)
 	},
 	Update_: func(local *context.LocalStack, param *vo.UsersEdit, self *UsersController) *vo.UsersVo {
 		var data *po.Users = &po.Users{}
 		util.JsonUtil.Copy(param, data)
 
-		result, _ := self.usersService.Update(local, data)
+		result, _ := self.UsersServiceImpl.Update(local, data)
 		return result
 	},
 	ChangeStatus_: func(local *context.LocalStack, id int, status int, self *UsersController) {
-		self.usersService.ChangeStatus(local, id, status)
+		self.UsersServiceImpl.ChangeStatus(local, id, status)
 	},
-}
-
-func GetUserController() *UsersController {
-	return &userController
 }
 
 func init() {
 	application.AddProxyInstance("", proxyclass.ProxyTarger(&userController))
-	userController.usersService = impl.GetUsersService()
 }

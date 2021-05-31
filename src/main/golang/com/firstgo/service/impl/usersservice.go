@@ -12,7 +12,7 @@ import (
 )
 
 type UsersService struct {
-	usersDao      *dao.UsersDao
+	UsersDaoImpl  *dao.UsersDao `FrameAutowired:""`
 	Proxy_        *proxyclass.ProxyClass
 	Save_         func(local *context.LocalStack, data *po.Users, self *UsersService) (*vo.UsersVo, error)
 	Update_       func(local *context.LocalStack, data *po.Users, self *UsersService) (*vo.UsersVo, error)
@@ -82,30 +82,30 @@ var usersService UsersService = UsersService{
 		},
 	},
 	Get_: func(local *context.LocalStack, id int, self *UsersService) (*vo.UsersVo, error) {
-		return self.usersDao.Get1(local, id)
+		return self.UsersDaoImpl.Get1(local, id)
 	},
 	Delete_: func(local *context.LocalStack, id int, self *UsersService) (int, error) {
-		return self.usersDao.Delete1(local, id)
+		return self.UsersDaoImpl.Delete1(local, id)
 	},
 	List_: func(local *context.LocalStack, param *vo.UsersParam, self *UsersService) (*vo.UsersPage, error) {
-		return self.usersDao.List1(local, param)
+		return self.UsersDaoImpl.List1(local, param)
 	},
 	Update_: func(local *context.LocalStack, data *po.Users, self *UsersService) (*vo.UsersVo, error) {
-		total, _ := self.usersDao.FindByNameExcludeId1(local, data.Name, data.Id)
+		total, _ := self.UsersDaoImpl.FindByNameExcludeId1(local, data.Name, data.Id)
 		if total > 0 {
 			panic(exception.NewException(502, "名称重复"))
 		}
 
-		self.usersDao.Update1(local, data)
+		self.UsersDaoImpl.Update1(local, data)
 		return self.Get(local, data.Id)
 	},
 	Save_: func(local *context.LocalStack, data *po.Users, self *UsersService) (*vo.UsersVo, error) {
-		total, _ := self.usersDao.FindByName1(local, data.Name)
+		total, _ := self.UsersDaoImpl.FindByName1(local, data.Name)
 		if total > 0 {
 			panic(exception.NewException(502, "名称重复"))
 		}
 
-		self.usersDao.Save(local, data)
+		self.UsersDaoImpl.Save(local, data)
 
 		if data.Status == -1 {
 			panic(exception.NewException(502, "状态不正确"))
@@ -114,15 +114,10 @@ var usersService UsersService = UsersService{
 		return self.Get(local, data.Id)
 	},
 	ChangeStatus_: func(local *context.LocalStack, id int, status int, self *UsersService) (int, error) {
-		return self.usersDao.ChangeStatus1(local, id, status)
+		return self.UsersDaoImpl.ChangeStatus1(local, id, status)
 	},
-}
-
-func GetUsersService() *UsersService {
-	return &usersService
 }
 
 func init() {
 	application.AddProxyInstance("", proxyclass.ProxyTarger(&usersService))
-	usersService.usersDao = dao.GetUsersDao()
 }
