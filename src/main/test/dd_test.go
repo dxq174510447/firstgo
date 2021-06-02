@@ -59,4 +59,9 @@ func TestPtrName(t *testing.T) {
 	for _, m1 := range mm {
 		fmt.Printf(m1)
 	}
+
+	var m2 []interface{}
+	m2 = append(m2, map[string]string{"a": "b"})
+	m2 = append(m2, map[string]int{"a": 1})
+	fmt.Println(m2)
 }

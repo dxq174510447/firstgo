@@ -1,6 +1,7 @@
 package v1
 
 import (
+	"encoding/json"
 	"firstgo/src/main/golang/com/firstgo/povo/po"
 	"firstgo/src/main/golang/com/firstgo/povo/vo"
 	"firstgo/src/main/golang/com/firstgo/service/impl"
@@ -8,14 +9,20 @@ import (
 	"fmt"
 	"github.com/dxq174510447/goframe/lib/frame/application"
 	"github.com/dxq174510447/goframe/lib/frame/context"
+	"github.com/dxq174510447/goframe/lib/frame/db/dbcore"
 	"github.com/dxq174510447/goframe/lib/frame/http"
 	"github.com/dxq174510447/goframe/lib/frame/proxy/proxyclass"
 	vo2 "github.com/dxq174510447/goframe/lib/frame/vo"
 )
 
+//	var setting map[string]*DatabaseConfig = make(map[string]*DatabaseConfig)
+//	applicationContext.Environment.GetObjectValue("platform.datasource.config", setting)
 // UsersController 不要直接初始化 首字母大写代表类
 type UsersController struct {
-	UsersServiceImpl *impl.UsersService `FrameAutowired:""`
+	UsersServiceImpl *impl.UsersService                `FrameAutowired:""`
+	DbConfig         map[string]*dbcore.DatabaseConfig `FrameValue:"${platform.datasource.config}"`
+	DefaultDbConfig  *dbcore.DatabaseConfig            `FrameValue:"${platform.datasource.config.default}"`
+	ContextPath      string                            `FrameValue:"${server.servlet.contextPath:xxxxx}"`
 	Proxy_           *proxyclass.ProxyClass
 	Save_            func(local *context.LocalStack, param *vo.UsersAdd, self *UsersController) *vo.UsersVo
 	Update_          func(local *context.LocalStack, param *vo.UsersEdit, self *UsersController) *vo.UsersVo
@@ -28,6 +35,16 @@ type UsersController struct {
 // Save 新增
 func (c *UsersController) Save(local *context.LocalStack, param *vo.UsersAdd) *vo2.JsonResult {
 	result := c.Save_(local, param, c)
+
+	// test
+	fmt.Println("contextPath-->", c.ContextPath)
+
+	s1, _ := json.Marshal(c.DbConfig)
+	fmt.Println("DbConfig-->", string(s1))
+
+	s2, _ := json.Marshal(c.DefaultDbConfig)
+	fmt.Println("DefaultDbConfig-->", string(s2))
+
 	return util.JsonUtil.BuildJsonSuccess(result)
 }
 
