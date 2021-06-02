@@ -13,6 +13,7 @@ import (
 	"github.com/dxq174510447/goframe/lib/frame/http"
 	"github.com/dxq174510447/goframe/lib/frame/proxy/proxyclass"
 	vo2 "github.com/dxq174510447/goframe/lib/frame/vo"
+	"unsafe"
 )
 
 //	var setting map[string]*DatabaseConfig = make(map[string]*DatabaseConfig)
@@ -34,7 +35,6 @@ type UsersController struct {
 
 // Save 新增
 func (c *UsersController) Save(local *context.LocalStack, param *vo.UsersAdd) *vo2.JsonResult {
-	result := c.Save_(local, param, c)
 
 	// test
 	fmt.Println("contextPath-->", c.ContextPath)
@@ -43,7 +43,9 @@ func (c *UsersController) Save(local *context.LocalStack, param *vo.UsersAdd) *v
 	fmt.Println("DbConfig-->", string(s1))
 
 	s2, _ := json.Marshal(c.DefaultDbConfig)
-	fmt.Println("DefaultDbConfig-->", string(s2))
+	fmt.Println("DefaultDbConfig-->", string(s2), uintptr(unsafe.Pointer(c.DefaultDbConfig)))
+
+	result := c.Save_(local, param, c)
 
 	return util.JsonUtil.BuildJsonSuccess(result)
 }

@@ -1,28 +1,35 @@
 package impl
 
 import (
+	"encoding/json"
 	"firstgo/src/main/golang/com/firstgo/dao"
 	"firstgo/src/main/golang/com/firstgo/povo/po"
 	"firstgo/src/main/golang/com/firstgo/povo/vo"
+	"fmt"
 	"github.com/dxq174510447/goframe/lib/frame/application"
 	context "github.com/dxq174510447/goframe/lib/frame/context"
 	dbcore "github.com/dxq174510447/goframe/lib/frame/db/dbcore"
 	exception "github.com/dxq174510447/goframe/lib/frame/exception"
 	"github.com/dxq174510447/goframe/lib/frame/proxy/proxyclass"
+	"unsafe"
 )
 
 type UsersService struct {
-	UsersDaoImpl  *dao.UsersDao `FrameAutowired:""`
-	Proxy_        *proxyclass.ProxyClass
-	Save_         func(local *context.LocalStack, data *po.Users, self *UsersService) (*vo.UsersVo, error)
-	Update_       func(local *context.LocalStack, data *po.Users, self *UsersService) (*vo.UsersVo, error)
-	Delete_       func(local *context.LocalStack, id int, self *UsersService) (int, error)
-	Get_          func(local *context.LocalStack, id int, self *UsersService) (*vo.UsersVo, error)
-	ChangeStatus_ func(local *context.LocalStack, id int, status int, self *UsersService) (int, error)
-	List_         func(local *context.LocalStack, param *vo.UsersParam, self *UsersService) (*vo.UsersPage, error)
+	UsersDaoImpl    *dao.UsersDao          `FrameAutowired:""`
+	DefaultDbConfig *dbcore.DatabaseConfig `FrameValue:"${platform.datasource.config.default}"`
+	Proxy_          *proxyclass.ProxyClass
+	Save_           func(local *context.LocalStack, data *po.Users, self *UsersService) (*vo.UsersVo, error)
+	Update_         func(local *context.LocalStack, data *po.Users, self *UsersService) (*vo.UsersVo, error)
+	Delete_         func(local *context.LocalStack, id int, self *UsersService) (int, error)
+	Get_            func(local *context.LocalStack, id int, self *UsersService) (*vo.UsersVo, error)
+	ChangeStatus_   func(local *context.LocalStack, id int, status int, self *UsersService) (int, error)
+	List_           func(local *context.LocalStack, param *vo.UsersParam, self *UsersService) (*vo.UsersPage, error)
 }
 
 func (c *UsersService) Save(local *context.LocalStack, data *po.Users) (*vo.UsersVo, error) {
+	s2, _ := json.Marshal(c.DefaultDbConfig)
+	fmt.Println("DefaultDbConfig-->", string(s2), uintptr(unsafe.Pointer(c.DefaultDbConfig)))
+
 	return c.Save_(local, data, c)
 }
 
