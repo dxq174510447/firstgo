@@ -4,9 +4,6 @@ import (
 	"bufio"
 	"fmt"
 	"os"
-	"regexp"
-	"strconv"
-	"strings"
 	"testing"
 	"time"
 )
@@ -79,7 +76,7 @@ func TestPtrName(t *testing.T) {
 	//go testFile(path,tag2)
 	//var m chan int = make(chan int)
 	//<- m
-	f := "%date %date{2006-01-02} %date{2006-01-02T15:04:05Z07:00} %-5thread %-5level %logger %logger{5} %-30logger{5} %thread %-5line %file %msg %n "
+	//f := "%date %date{2006-01-02} %date{2006-01-02T15:04:05Z07:00} %-5thread %-5level %logger %logger{5} %-30logger{5} %thread %-5line %file %msg %n "
 	//reg := regexp.MustCompile(`(?m)(^\s+|\s+$)`)
 	//reg := regexp.MustCompile("%(\\{[^\\}]+\\})?(date|thread|level|logger|line|file|msg|n)(\\{[^\\}]+\\})?")
 	//last := reg.ReplaceAllStringFunc(f,func(row string) string{
@@ -88,96 +85,106 @@ func TestPtrName(t *testing.T) {
 	//})
 	//fmt.Println("--->",last)
 	// date|thread|level|line|file|msg|n|logger
-	var date1 = regexp.MustCompile("%date(\\{[^\\}]+\\})?")
-	f = date1.ReplaceAllStringFunc(f, func(row string) string {
-		p := strings.Index(row, "{")
-		dateFormat := "2006-01-02 15:04:05"
-		if p >= 0 {
-			p1 := strings.Index(row, "}")
-			dateFormat = row[p+1 : p1]
-		}
-		return fmt.Sprintf(`{{logDate "%s"}}`, dateFormat)
-	})
-	var thread1 = regexp.MustCompile("%(\\-\\d+)?thread")
-	f = thread1.ReplaceAllStringFunc(f, func(row string) string {
-		p := strings.Index(row, "-")
-		maxSize := 0
-		if p >= 0 {
-			p1 := strings.Index(row, "thread")
-			maxSizeStr := row[p+1 : p1]
-			maxSize, _ = strconv.Atoi(maxSizeStr)
-		}
-		return fmt.Sprintf(`{{logThread %d}}`, maxSize)
-	})
-	var level1 = regexp.MustCompile("%(\\-\\d+)?level")
-	f = level1.ReplaceAllStringFunc(f, func(row string) string {
-		p := strings.Index(row, "-")
-		maxSize := 0
-		if p >= 0 {
-			p1 := strings.Index(row, "level")
-			maxSizeStr := row[p+1 : p1]
-			maxSize, _ = strconv.Atoi(maxSizeStr)
-		}
-		return fmt.Sprintf(`{{logLevel %d}}`, maxSize)
-	})
-
-	//line|file|msg|n|logger
-	var line1 = regexp.MustCompile("%(\\-\\d+)?line")
-	f = line1.ReplaceAllStringFunc(f, func(row string) string {
-		p := strings.Index(row, "-")
-		maxSize := 0
-		if p >= 0 {
-			p1 := strings.Index(row, "line")
-			maxSizeStr := row[p+1 : p1]
-			maxSize, _ = strconv.Atoi(maxSizeStr)
-		}
-		return fmt.Sprintf(`{{logLine %d}}`, maxSize)
-	})
-
-	var file1 = regexp.MustCompile("%(\\-\\d+)?file")
-	f = file1.ReplaceAllStringFunc(f, func(row string) string {
-		p := strings.Index(row, "-")
-		maxSize := 0
-		if p >= 0 {
-			p1 := strings.Index(row, "file")
-			maxSizeStr := row[p+1 : p1]
-			maxSize, _ = strconv.Atoi(maxSizeStr)
-		}
-		return fmt.Sprintf(`{{logFile %d}}`, maxSize)
-	})
-	//msg|n|logger
-	var msg1 = regexp.MustCompile("%(\\-\\d+)?msg")
-	f = msg1.ReplaceAllStringFunc(f, func(row string) string {
-		return fmt.Sprintf(`{{logMsg %d}}`, 0)
-	})
-	var br = regexp.MustCompile("%(\\-\\d+)?n")
-	f = br.ReplaceAllStringFunc(f, func(row string) string {
-		//return fmt.Sprintf(`{{logBr %d}}`,0)
-		return `\n`
-	})
-	//%logger{n}
-	var logger1 = regexp.MustCompile("%(\\-\\d+)?logger(\\{[^\\}]+\\})?")
-	f = logger1.ReplaceAllStringFunc(f, func(row string) string {
-		//return fmt.Sprintf(`{{logBr %d}}`,0)
-		p := strings.Index(row, "-")
-		maxSize := 0
-		if p >= 0 {
-			p1 := strings.Index(row, "logger")
-			maxSizeStr := row[p+1 : p1]
-			maxSize, _ = strconv.Atoi(maxSizeStr)
-		}
-
-		p1 := strings.Index(row, "{")
-		clazzSize := -1
-		if p1 >= 0 {
-			p2 := strings.Index(row, "}")
-			clazzSizeStr := row[p1+1 : p2]
-			clazzSize, _ = strconv.Atoi(clazzSizeStr)
-		}
-		return fmt.Sprintf(`{{logLogger %d %d}}`, maxSize, clazzSize)
-	})
-
-	fmt.Println("--->", f)
+	//var date1 = regexp.MustCompile("%date(\\{[^\\}]+\\})?")
+	//f = date1.ReplaceAllStringFunc(f, func(row string) string {
+	//	p := strings.Index(row, "{")
+	//	dateFormat := "2006-01-02 15:04:05"
+	//	if p >= 0 {
+	//		p1 := strings.Index(row, "}")
+	//		dateFormat = row[p+1 : p1]
+	//	}
+	//	return fmt.Sprintf(`{{logDate "%s"}}`, dateFormat)
+	//})
+	//var thread1 = regexp.MustCompile("%(\\-\\d+)?thread")
+	//f = thread1.ReplaceAllStringFunc(f, func(row string) string {
+	//	p := strings.Index(row, "-")
+	//	maxSize := 0
+	//	if p >= 0 {
+	//		p1 := strings.Index(row, "thread")
+	//		maxSizeStr := row[p+1 : p1]
+	//		maxSize, _ = strconv.Atoi(maxSizeStr)
+	//	}
+	//	return fmt.Sprintf(`{{logThread %d}}`, maxSize)
+	//})
+	//var level1 = regexp.MustCompile("%(\\-\\d+)?level")
+	//f = level1.ReplaceAllStringFunc(f, func(row string) string {
+	//	p := strings.Index(row, "-")
+	//	maxSize := 0
+	//	if p >= 0 {
+	//		p1 := strings.Index(row, "level")
+	//		maxSizeStr := row[p+1 : p1]
+	//		maxSize, _ = strconv.Atoi(maxSizeStr)
+	//	}
+	//	return fmt.Sprintf(`{{logLevel %d}}`, maxSize)
+	//})
+	//
+	////line|file|msg|n|logger
+	//var line1 = regexp.MustCompile("%(\\-\\d+)?line")
+	//f = line1.ReplaceAllStringFunc(f, func(row string) string {
+	//	p := strings.Index(row, "-")
+	//	maxSize := 0
+	//	if p >= 0 {
+	//		p1 := strings.Index(row, "line")
+	//		maxSizeStr := row[p+1 : p1]
+	//		maxSize, _ = strconv.Atoi(maxSizeStr)
+	//	}
+	//	return fmt.Sprintf(`{{logLine %d}}`, maxSize)
+	//})
+	//
+	//var file1 = regexp.MustCompile("%(\\-\\d+)?file")
+	//f = file1.ReplaceAllStringFunc(f, func(row string) string {
+	//	p := strings.Index(row, "-")
+	//	maxSize := 0
+	//	if p >= 0 {
+	//		p1 := strings.Index(row, "file")
+	//		maxSizeStr := row[p+1 : p1]
+	//		maxSize, _ = strconv.Atoi(maxSizeStr)
+	//	}
+	//	return fmt.Sprintf(`{{logFile %d}}`, maxSize)
+	//})
+	////msg|n|logger
+	//var msg1 = regexp.MustCompile("%(\\-\\d+)?msg")
+	//f = msg1.ReplaceAllStringFunc(f, func(row string) string {
+	//	return fmt.Sprintf(`{{logMsg %d}}`, 0)
+	//})
+	//var br = regexp.MustCompile("%(\\-\\d+)?n")
+	//f = br.ReplaceAllStringFunc(f, func(row string) string {
+	//	//return fmt.Sprintf(`{{logBr %d}}`,0)
+	//	return `\n`
+	//})
+	////%logger{n}
+	//var logger1 = regexp.MustCompile("%(\\-\\d+)?logger(\\{[^\\}]+\\})?")
+	//f = logger1.ReplaceAllStringFunc(f, func(row string) string {
+	//	//return fmt.Sprintf(`{{logBr %d}}`,0)
+	//	p := strings.Index(row, "-")
+	//	maxSize := 0
+	//	if p >= 0 {
+	//		p1 := strings.Index(row, "logger")
+	//		maxSizeStr := row[p+1 : p1]
+	//		maxSize, _ = strconv.Atoi(maxSizeStr)
+	//	}
+	//
+	//	p1 := strings.Index(row, "{")
+	//	clazzSize := -1
+	//	if p1 >= 0 {
+	//		p2 := strings.Index(row, "}")
+	//		clazzSizeStr := row[p1+1 : p2]
+	//		clazzSize, _ = strconv.Atoi(clazzSizeStr)
+	//	}
+	//	return fmt.Sprintf(`{{logLogger %d %d}}`, maxSize, clazzSize)
+	//})
+	//
+	//fmt.Println("--->", f)
+	//l := 10
+	m := "Abcd.Abg.go"
+	n := []byte(m)
+	sp := make([]byte, 22, 22)
+	for i := 0; i < 22; i++ {
+		sp[i] = 32
+	}
+	copy(sp, n)
+	n2 := string(sp)
+	fmt.Printf("%s-%s--\n", m, n2)
 }
 
 func testFile(path string, tag string) {

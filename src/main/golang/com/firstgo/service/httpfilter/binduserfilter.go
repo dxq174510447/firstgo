@@ -3,7 +3,6 @@ package httpfilter
 import (
 	"firstgo/src/main/golang/com/firstgo/povo/po"
 	"firstgo/src/main/golang/com/firstgo/util"
-	"fmt"
 	"github.com/dxq174510447/goframe/lib/frame/application"
 	context "github.com/dxq174510447/goframe/lib/frame/context"
 	http2 "github.com/dxq174510447/goframe/lib/frame/http"
@@ -13,14 +12,13 @@ import (
 
 // BindUserFilter test localstack
 type BindUserFilter struct {
+	Logger application.AppLoger `FrameAutowired:""`
 }
 
 func (b *BindUserFilter) DoFilter(local *context.LocalStack,
 	request *http.Request, response http.ResponseWriter, chain http2.FilterChain) {
-	fmt.Println("BindUserFilter begin")
-	defer func() {
-		fmt.Println("BindUserFilter end")
-	}()
+
+	b.Logger.Debug(local, "%s", "BindUserFilter begin")
 
 	token := request.Header.Get("token")
 	if token != "" {

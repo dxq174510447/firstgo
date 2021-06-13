@@ -20,6 +20,7 @@ import (
 //	applicationContext.Environment.GetObjectValue("platform.datasource.config", setting)
 // UsersController 不要直接初始化 首字母大写代表类
 type UsersController struct {
+	Logger           application.AppLoger              `FrameAutowired:""`
 	UsersServiceImpl *impl.UsersService                `FrameAutowired:""`
 	DbConfig         map[string]*dbcore.DatabaseConfig `FrameValue:"${platform.datasource.config}"`
 	DefaultDbConfig  *dbcore.DatabaseConfig            `FrameValue:"${platform.datasource.config.default}"`
@@ -64,6 +65,9 @@ func (c *UsersController) Delete(local *context.LocalStack, id int) *vo2.JsonRes
 
 // Get 查看
 func (c *UsersController) Get(local *context.LocalStack, id int) *vo2.JsonResult {
+
+	c.Logger.Info(local, "%s--%s", "123", "456")
+
 	result := c.Get_(local, id, c)
 	return util.JsonUtil.BuildJsonSuccess(result)
 }
