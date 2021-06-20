@@ -11,6 +11,7 @@ import (
 	"github.com/dxq174510447/goframe/lib/frame/context"
 	"github.com/dxq174510447/goframe/lib/frame/db/dbcore"
 	"github.com/dxq174510447/goframe/lib/frame/http"
+	"github.com/dxq174510447/goframe/lib/frame/log/logclass"
 	"github.com/dxq174510447/goframe/lib/frame/proxy/proxyclass"
 	vo2 "github.com/dxq174510447/goframe/lib/frame/vo"
 	"unsafe"
@@ -20,7 +21,7 @@ import (
 //	applicationContext.Environment.GetObjectValue("platform.datasource.config", setting)
 // UsersController 不要直接初始化 首字母大写代表类
 type UsersController struct {
-	Logger           application.AppLoger              `FrameAutowired:""`
+	Logger           logclass.AppLoger                 `FrameAutowired:""`
 	UsersServiceImpl *impl.UsersService                `FrameAutowired:""`
 	DbConfig         map[string]*dbcore.DatabaseConfig `FrameValue:"${platform.datasource.config}"`
 	DefaultDbConfig  *dbcore.DatabaseConfig            `FrameValue:"${platform.datasource.config.default}"`
@@ -97,7 +98,7 @@ func (c *UsersController) ProxyTarget() *proxyclass.ProxyClass {
 var userController UsersController = UsersController{
 	Proxy_: &proxyclass.ProxyClass{
 		Annotations: []*proxyclass.AnnotationClass{
-			http.NewRestAnnotation(util.ConfigUtil.WrapServletPath("/v1/users"), "", "", "", "", ""),
+			http.NewRestAnnotation("/v1/users", "", "", "", "", ""),
 		},
 		Methods: []*proxyclass.ProxyMethod{
 			{

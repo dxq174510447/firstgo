@@ -5,13 +5,14 @@ import (
 	"github.com/dxq174510447/goframe/lib/frame/context"
 	"github.com/dxq174510447/goframe/lib/frame/event"
 	"github.com/dxq174510447/goframe/lib/frame/http"
+	"github.com/dxq174510447/goframe/lib/frame/log/logclass"
 	"github.com/dxq174510447/goframe/lib/frame/proxy/proxyclass"
 	"github.com/dxq174510447/goframe/lib/frame/util"
 	"reflect"
 )
 
 type WebStartedEchoListener struct {
-	Logger application.AppLoger `FrameAutowired:""`
+	Logger logclass.AppLoger `FrameAutowired:""`
 }
 
 func (w *WebStartedEchoListener) OnEvent(local *context.LocalStack, event event.FrameEventer) error {

@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"reflect"
 	"testing"
 	"time"
 )
@@ -176,15 +177,24 @@ func TestPtrName(t *testing.T) {
 	//
 	//fmt.Println("--->", f)
 	//l := 10
-	m := "Abcd.Abg.go"
-	n := []byte(m)
-	sp := make([]byte, 22, 22)
-	for i := 0; i < 22; i++ {
-		sp[i] = 32
+	m := "Zbcd.Abg.go"
+	n := m[0]
+	fmt.Println(reflect.ValueOf(n).Type())
+	fmt.Println(n)
+	//A-Z
+	if n >= 65 && n <= 90 {
+		fmt.Println("A_Z")
+	} else {
+		fmt.Println("nonA_Z")
 	}
-	copy(sp, n)
-	n2 := string(sp)
-	fmt.Printf("%s-%s--\n", m, n2)
+	//n := []byte(m)
+	//sp := make([]byte, 22, 22)
+	//for i := 0; i < 22; i++ {
+	//	sp[i] = 32
+	//}
+	//copy(sp, n)
+	//n2 := string(sp)
+	//fmt.Printf("%s-%s--\n", m, n2)
 }
 
 func testFile(path string, tag string) {

@@ -7,7 +7,7 @@ mm: bb
 server:
   port: ${APPLICATION_PORT:8080}
   servlet:
-    contextPath: ${APPLICATION_PATH:/api/v1/base}
+    contextPath: ${APPLICATION_PATH:/api/base1}
   access:
     inner: ${APPLICATION_INNER:http://127.0.0.1:8081}
     outer: ${APPLICATION_OUTER:https://wx.dev.chelizitech.com}

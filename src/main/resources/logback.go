@@ -13,7 +13,7 @@ var logback = `
 
 	<appender name="CONSOLE1" class="console">
     <encoder>
-      <pattern>%date %-5thread %-10logger{0} %file.%-5line %msg %n</pattern>
+      <pattern>%date [%-5thread] [%-5level] %-10logger{0}.%-5line %msg %n</pattern>
     </encoder>
   </appender>
   
