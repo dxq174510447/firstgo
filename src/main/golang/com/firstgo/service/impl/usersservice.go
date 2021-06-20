@@ -37,17 +37,20 @@ func (c *UsersService) Update(local *context.LocalStack, data *po.Users) (*vo.Us
 	return c.Update_(local, data, c)
 }
 
-func (c *UsersService) Delete(local *context.LocalStack, id int) {
-	c.Delete_(local, id, c)
+func (c *UsersService) Delete(local *context.LocalStack, id int) (int, error) {
+	return c.Delete_(local, id, c)
 }
 
 func (c *UsersService) Get(local *context.LocalStack, id int) (*vo.UsersVo, error) {
 	return c.Get_(local, id, c)
 }
 
-func (c *UsersService) ChangeStatus(local *context.LocalStack, id int, status int) {
+func (c *UsersService) ChangeStatus(local *context.LocalStack, id int, status int) error {
 	c.ChangeStatus_(local, id, status, c)
+
+	return nil
 }
+
 func (c *UsersService) List(local *context.LocalStack, param *vo.UsersParam) (*vo.UsersPage, error) {
 	return c.List_(local, param, c)
 }
@@ -91,9 +94,6 @@ var usersService UsersService = UsersService{
 	Get_: func(local *context.LocalStack, id int, self *UsersService) (*vo.UsersVo, error) {
 		return self.UsersDaoImpl.Get1(local, id)
 	},
-	Delete_: func(local *context.LocalStack, id int, self *UsersService) (int, error) {
-		return self.UsersDaoImpl.Delete1(local, id)
-	},
 	List_: func(local *context.LocalStack, param *vo.UsersParam, self *UsersService) (*vo.UsersPage, error) {
 		return self.UsersDaoImpl.List1(local, param)
 	},
@@ -120,8 +120,15 @@ var usersService UsersService = UsersService{
 
 		return self.Get(local, data.Id)
 	},
+	Delete_: func(local *context.LocalStack, id int, self *UsersService) (int, error) {
+		self.UsersDaoImpl.Delete1(local, id)
+		panic("123123")
+		return 1, exception.NewException(500, "12312")
+	},
 	ChangeStatus_: func(local *context.LocalStack, id int, status int, self *UsersService) (int, error) {
-		return self.UsersDaoImpl.ChangeStatus1(local, id, status)
+		self.UsersDaoImpl.ChangeStatus1(local, id, status)
+		self.Delete(local, id)
+		return 0, nil
 	},
 }
 
