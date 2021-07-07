@@ -3,6 +3,7 @@ package test
 import (
 	"bufio"
 	"fmt"
+	"github.com/dxq174510447/goframe/lib/frame/util"
 	"os"
 	"reflect"
 	"testing"
@@ -41,6 +42,30 @@ var GetName1 = func(defaultValue string) (string, error) {
 //	// equivalent to e := unsafe.Pointer(&x[i])
 //	e := unsafe.Pointer(uintptr(unsafe.Pointer(&x[0])) + i*unsafe.Sizeof(x[0])) //array
 //  p := (*int)(unsafe.Pointer(reflect.ValueOf(new(int)).Pointer()))
+
+type User struct {
+	Aaa Aaer
+	Bbb string
+}
+
+type Aaer interface {
+	MM()
+}
+
+type Bber interface {
+	NN()
+}
+
+type AaService struct {
+}
+
+func (a AaService) MM() {
+	fmt.Println("asdas")
+}
+
+func (a AaService) NN() {
+	fmt.Println("asdas")
+}
 
 func TestPtrName(t *testing.T) {
 
@@ -177,16 +202,16 @@ func TestPtrName(t *testing.T) {
 	//
 	//fmt.Println("--->", f)
 	//l := 10
-	m := "Zbcd.Abg.go"
-	n := m[0]
-	fmt.Println(reflect.ValueOf(n).Type())
-	fmt.Println(n)
-	//A-Z
-	if n >= 65 && n <= 90 {
-		fmt.Println("A_Z")
-	} else {
-		fmt.Println("nonA_Z")
-	}
+	//m := "Zbcd.Abg.go"
+	//n := m[0]
+	//fmt.Println(reflect.ValueOf(n).Type())
+	//fmt.Println(n)
+	////A-Z
+	//if n >= 65 && n <= 90 {
+	//	fmt.Println("A_Z")
+	//} else {
+	//	fmt.Println("nonA_Z")
+	//}
 	//n := []byte(m)
 	//sp := make([]byte, 22, 22)
 	//for i := 0; i < 22; i++ {
@@ -195,6 +220,27 @@ func TestPtrName(t *testing.T) {
 	//copy(sp, n)
 	//n2 := string(sp)
 	//fmt.Printf("%s-%s--\n", m, n2)
+
+	u := &User{}
+	//fmt.Println(u.Aaa==nil)
+	rv := reflect.ValueOf(u).Elem()
+	rt := rv.Type()
+
+	n := rt.NumField()
+
+	m12 := &AaService{}
+	m := Bber(m12)
+
+	var rr reflect.Type = reflect.Zero(reflect.TypeOf((*Aaer)(nil)).Elem()).Type()
+
+	for i := 0; i < n; i++ {
+		f := rt.Field(i)
+		if f.Type.Kind() == reflect.Interface {
+			fmt.Println(rr == f.Type)
+			m1 := util.ClassUtil.GetClassNameByType(f.Type)
+			fmt.Println(reflect.ValueOf(m).Type().Implements(f.Type), m1)
+		}
+	}
 }
 
 func testFile(path string, tag string) {

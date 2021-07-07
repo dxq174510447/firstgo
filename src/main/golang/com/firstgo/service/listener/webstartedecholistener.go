@@ -1,6 +1,7 @@
 package listener
 
 import (
+	"firstgo/src/main/golang/com/firstgo/service/impl"
 	"github.com/dxq174510447/goframe/lib/frame/application"
 	"github.com/dxq174510447/goframe/lib/frame/context"
 	"github.com/dxq174510447/goframe/lib/frame/event"
@@ -12,12 +13,14 @@ import (
 )
 
 type WebStartedEchoListener struct {
-	Logger logclass.AppLoger `FrameAutowired:""`
+	Logger           logclass.AppLoger  `FrameAutowired:""`
+	UsersServiceImpl *impl.UsersService `FrameAutowired:""`
+	AuthService      impl.AuthServicer  `FrameAutowired:""`
 }
 
 func (w *WebStartedEchoListener) OnEvent(local *context.LocalStack, event event.FrameEventer) error {
 	f := util.ClassUtil.GetClassNameByType(reflect.TypeOf(event).Elem())
-	w.Logger.Info(local, "启动 %s", f)
+	w.Logger.Info(local, "启动 %s %b", f, w.UsersServiceImpl == w.AuthService)
 	return nil
 }
 

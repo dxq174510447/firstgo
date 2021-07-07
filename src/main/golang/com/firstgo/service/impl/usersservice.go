@@ -59,6 +59,11 @@ func (c *UsersService) ProxyTarget() *proxyclass.ProxyClass {
 	return c.Proxy_
 }
 
+func (c *UsersService) AuthValid(name string, pwd string) (bool, error) {
+	fmt.Println(name, pwd)
+	return true, nil
+}
+
 var usersService UsersService = UsersService{
 	Proxy_: &proxyclass.ProxyClass{
 		Annotations: []*proxyclass.AnnotationClass{

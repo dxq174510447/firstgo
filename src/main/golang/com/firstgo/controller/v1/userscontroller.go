@@ -23,6 +23,7 @@ import (
 type UsersController struct {
 	Logger           logclass.AppLoger                 `FrameAutowired:""`
 	UsersServiceImpl *impl.UsersService                `FrameAutowired:""`
+	AuthService      impl.AuthServicer                 `FrameAutowired:""`
 	DbConfig         map[string]*dbcore.DatabaseConfig `FrameValue:"${platform.datasource.config}"`
 	DefaultDbConfig  *dbcore.DatabaseConfig            `FrameValue:"${platform.datasource.config.default}"`
 	ContextPath      string                            `FrameValue:"${server.servlet.contextPath:xxxxx}"`
