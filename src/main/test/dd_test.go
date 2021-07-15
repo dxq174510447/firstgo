@@ -176,15 +176,15 @@ func TestPtrName(t *testing.T) {
 	//
 	//fmt.Println("--->", f)
 	//l := 10
-	m := "Abcd.Abg.go"
-	n := []byte(m)
-	sp := make([]byte, 22, 22)
-	for i := 0; i < 22; i++ {
-		sp[i] = 32
-	}
-	copy(sp, n)
-	n2 := string(sp)
-	fmt.Printf("%s-%s--\n", m, n2)
+	//m := "Abcd.Abg.go"
+	//n := []byte(m)
+	//sp := make([]byte, 22, 22)
+	//for i := 0; i < 22; i++ {
+	//	sp[i] = 32
+	//}
+	//copy(sp, n)
+	//n2 := string(sp)
+	//fmt.Printf("%s-%s--\n", m, n2)
 }
 
 func testFile(path string, tag string) {
