@@ -1,4 +1,4 @@
-package astree
+package main
 
 import (
 	"fmt"
