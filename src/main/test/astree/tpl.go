@@ -16,9 +16,8 @@ type {{.ProxyClazz}} struct {
 }
 
 {{- range $index, $element := .Method}}
-func (u *{{$.ProxyClazz}}){{$element.MethodName}}({{range $paramIndex, $param := $element.ParamField}}{{if $paramIndex}},{{end}}{{$param.FieldName}} {{FieldTypeStr $param}}{{end}}) {
-	fmt.Println("hello")
-	return 0,nil
+func (u *{{$.ProxyClazz}}){{$element.MethodName}}({{range $paramIndex, $param := $element.ParamField}}{{if $paramIndex}},{{end}}{{$param.FieldName}} {{FieldTypeStr $param}}{{end}}) {{if gt (len $element.ReturnField) 1}}({{end}}{{range $paramIndex, $param := $element.ReturnField}}{{if $paramIndex}},{{end}}{{FieldTypeStr $param}}{{end}}{{if gt (len $element.ReturnField) 1}}){{end}} {
+	//
 }
 {{- end}}
   

@@ -216,22 +216,29 @@ var tplFunc template.FuncMap = template.FuncMap{
 
 func getFieldTypeStr(field *ProxyField) string {
 	sb := strings.Builder{}
-	if field.FieldArray == 1 {
-		sb.WriteString("[]")
-		if field.FieldAddress == 1 {
-			sb.WriteString("*")
-		}
-	} else if field.FieldMap == 1 {
-		sb.WriteString("map[")
-
-		sb.WriteString("]")
-		sb.WriteString("[")
-
-		sb.WriteString("]")
-	} else if field.FieldAddress == 1 {
+	// 是否是特殊类型 0否 1指针 2 slice 3 map
+	switch field.SpecialType {
+	case 1:
 		sb.WriteString("*")
-	} else {
-
+		if field.TypePackage != "" {
+			sb.WriteString(field.TypePackage)
+			sb.WriteString(".")
+		}
+		sb.WriteString(field.FieldType)
+	case 2:
+		sb.WriteString("[]")
+		sb.WriteString(getFieldTypeStr(field.ElementField))
+	case 3:
+		sb.WriteString("map[")
+		sb.WriteString(getFieldTypeStr(field.KeyField))
+		sb.WriteString("]")
+		sb.WriteString(getFieldTypeStr(field.ValueField))
+	default:
+		if field.TypePackage != "" {
+			sb.WriteString(field.TypePackage)
+			sb.WriteString(".")
+		}
+		sb.WriteString(field.FieldType)
 	}
 	return sb.String()
 }
