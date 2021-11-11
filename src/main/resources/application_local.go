@@ -9,5 +9,5 @@ server:
 `
 
 func init() {
-	application.AddConfigYaml(application.ApplicationLocalYaml, localYaml)
+	application.GetResourcePool().AddConfigYaml(application.ApplicationLocalYaml,localYaml)
 }

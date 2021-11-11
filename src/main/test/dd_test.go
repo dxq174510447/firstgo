@@ -3,9 +3,8 @@ package test
 import (
 	"bufio"
 	"fmt"
-	"github.com/dxq174510447/goframe/lib/frame/util"
 	"os"
-	"reflect"
+	"strings"
 	"testing"
 	"time"
 )
@@ -221,25 +220,64 @@ func TestPtrName(t *testing.T) {
 	//n2 := string(sp)
 	//fmt.Printf("%s-%s--\n", m, n2)
 
-	u := &User{}
-	//fmt.Println(u.Aaa==nil)
-	rv := reflect.ValueOf(u).Elem()
-	rt := rv.Type()
+	//u := &User{}
+	////fmt.Println(u.Aaa==nil)
+	//rv := reflect.ValueOf(u).Elem()
+	//rt := rv.Type()
+	//
+	//n := rt.NumField()
+	//
+	//m12 := &AaService{}
+	//m := Bber(m12)
+	//
+	//var rr reflect.Type = reflect.Zero(reflect.TypeOf((*Aaer)(nil)).Elem()).Type()
+	//
+	//for i := 0; i < n; i++ {
+	//	f := rt.Field(i)
+	//	if f.Type.Kind() == reflect.Interface {
+	//		fmt.Println(rr == f.Type)
+	//		m1 := util.ClassUtil.GetClassNameByType(f.Type)
+	//		fmt.Println(reflect.ValueOf(m).Type().Implements(f.Type), m1)
+	//	}
+	//}
 
-	n := rt.NumField()
+	//TOP_OF_MINUTE = "TOP_OF_MINUTE_"
+	//TOP_OF_HOUR = "TOP_OF_HOUR_"
+	//HALF_DAY = "HALF_DAY_"
+	//TOP_OF_DAY = "TOP_OF_DAY_"
+	//TOP_OF_WEEK = "TOP_OF_WEEK_"
+	//TOP_OF_MONTH = "TOP_OF_MONTH_"
+	var t1 string = "xxx-%d"
+	var t2 string = "xxx-%d{2006-01-02}"
+	//
+	var t3 string = "xxx-%d{2006-01-02_15:04}"
+	var t4 string = "xxx-%d{2006-01-02_15}"
+	var t5 string = "xxx-%d{2006-01-02_15}" //
+	var t6 string = "xxx-%d{2006-01-02}"
+	//var t7 string = "xxx-%d{2006-01-Wed}" //
+	//var t8 string = "xxx-%d{2006-01}"
 
-	m12 := &AaService{}
-	m := Bber(m12)
+	//fmt.Println(time.Now().Format("2006-01-02-Mon"))
+	fmt.Println(testGetRollRule(t1))
+	fmt.Println(testGetRollRule(t2))
+	fmt.Println(testGetRollRule(t3))
+	fmt.Println(testGetRollRule(t4))
+	fmt.Println(testGetRollRule(t5))
+	fmt.Println(testGetRollRule(t6))
+	fmt.Println(time.Now().Format(testGetRollRule(t5)))
+}
 
-	var rr reflect.Type = reflect.Zero(reflect.TypeOf((*Aaer)(nil)).Elem()).Type()
-
-	for i := 0; i < n; i++ {
-		f := rt.Field(i)
-		if f.Type.Kind() == reflect.Interface {
-			fmt.Println(rr == f.Type)
-			m1 := util.ClassUtil.GetClassNameByType(f.Type)
-			fmt.Println(reflect.ValueOf(m).Type().Implements(f.Type), m1)
-		}
+func testGetRollRule(filename string) string{
+	p := strings.LastIndex(filename,"%d")
+	if p == -1 {
+		panic("rolling filename error")
+	}
+	begin := p+2
+	if begin == len(filename) || filename[begin:begin+1] != "{" {
+		return "2006-01-02"
+	}else{
+		last := strings.LastIndex(filename,"}")
+		return filename[begin+1:last]
 	}
 }
 

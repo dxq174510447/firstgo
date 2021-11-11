@@ -3,7 +3,6 @@ package resources
 import "github.com/dxq174510447/goframe/lib/frame/application"
 
 var defaultYaml string = `
-mm: bb
 server:
   port: ${APPLICATION_PORT:8080}
   servlet:
@@ -34,5 +33,5 @@ platform:
 `
 
 func init() {
-	application.AddConfigYaml(application.ApplicationDefaultYaml, defaultYaml)
+	application.GetResourcePool().AddConfigYaml(application.ApplicationDefaultYaml,defaultYaml)
 }

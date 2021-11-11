@@ -7,17 +7,9 @@ import (
 	"github.com/dxq174510447/goframe/lib/frame/application"
 )
 
-type FirstGo struct {
-}
-
-func (f *FirstGo) Run(args []string) {
-	application.NewApplication(f).Run(args)
-}
 
 func main() {
 	// http.ListenAndServe(":8080", nil)
 	args := []string{"--appli=123"}
-
-	var instance *FirstGo = &FirstGo{}
-	instance.Run(args)
+	application.NewApplication(nil).Run(args)
 }
