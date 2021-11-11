@@ -4,11 +4,12 @@ import (
 	"context"
 	"firstgo/src/main/golang/com/firstgo/povo/vo"
 	"fmt"
-	"github.com/dxq174510447/goframe/lib/frame/application"
+	"goframe/lib/frame/application"
 )
 
 /*
 UsersController
+用户管理模块
 @RestController
 @RequestMapping()
  */

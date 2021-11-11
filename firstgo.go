@@ -3,8 +3,8 @@ package main
 import (
 	_ "firstgo/src/main/golang"
 	_ "firstgo/src/main/resources"
-	_ "github.com/dxq174510447/goframe/lib/frame"
-	"github.com/dxq174510447/goframe/lib/frame/application"
+	_ "goframe/lib/frame"
+	"goframe/lib/frame/application"
 )
 
 

@@ -1,8 +1,8 @@
 package resources
 
 import (
-	"github.com/dxq174510447/goframe/lib/frame/application"
-	"github.com/dxq174510447/goframe/lib/frame/log"
+	"goframe/lib/frame/application"
+	"goframe/lib/frame/log"
 )
 
 var logConfig = `
